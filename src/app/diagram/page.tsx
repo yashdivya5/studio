@@ -16,7 +16,9 @@ import type { DiagramGenerationInput } from '@/ai/flows/diagram-generation';
 import { useToast } from '@/hooks/use-toast';
 import { renderMermaidDiagram, exportSVG, exportPNG, exportJSON } from '@/lib/mermaid-utils';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
-import { Loader2, Network } from 'lucide-react';
+import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Loader2, Network, XIcon } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -30,6 +32,7 @@ const DiagramPage: NextPage = () => {
   const [diagramCode, setDiagramCode] = useState<string>('');
   const [currentSvgContent, setCurrentSvgContent] = useState<string>('');
   const [diagramType, setDiagramType] = useState<string>('flowchart');
+  const [isDiagramModalOpen, setIsDiagramModalOpen] = useState<boolean>(false);
 
   const diagramTypes = [
     { value: 'flowchart', label: 'Flowchart' },
@@ -50,18 +53,29 @@ const DiagramPage: NextPage = () => {
   }, [currentUser, authLoading, router]);
 
   const debouncedRenderDiagram = useCallback(
-    debounce((code: string) => {
-      startTransition(async () => {
-        const svg = await renderMermaidDiagram('mermaid-diagram-container', code);
-        if (svg) setCurrentSvgContent(svg);
-      });
-    }, 500),
+    debounce(async (code: string, containerId: string = 'mermaid-diagram-container') => {
+      const svg = await renderMermaidDiagram(containerId, code);
+      if (svg && containerId === 'mermaid-diagram-container') { // Only update main view's SVG content
+        setCurrentSvgContent(svg);
+      }
+      return svg;
+    }, 300),
     []
   );
 
+  useEffect(() => {
+    if (isDiagramModalOpen && diagramCode) {
+      startTransition(async () => {
+        await debouncedRenderDiagram(diagramCode, 'mermaid-modal-diagram-container');
+      });
+    }
+  }, [isDiagramModalOpen, diagramCode, debouncedRenderDiagram]);
+
   const handleCodeChange = (newCode: string) => {
     setDiagramCode(newCode);
-    debouncedRenderDiagram(newCode);
+    startTransition(async () => {
+      await debouncedRenderDiagram(newCode);
+    });
   };
 
   const handlePromptSubmit = async (promptText: string) => {
@@ -71,8 +85,7 @@ const DiagramPage: NextPage = () => {
         const input: DiagramGenerationInput = { prompt: fullPrompt };
         const result = await generateDiagram(input);
         setDiagramCode(result.diagramCode);
-        const svg = await renderMermaidDiagram('mermaid-diagram-container', result.diagramCode);
-        if (svg) setCurrentSvgContent(svg);
+        await debouncedRenderDiagram(result.diagramCode);
         toast({
           title: 'Diagram Generated!',
           description: 'Your diagram has been successfully created from the prompt.',
@@ -86,6 +99,18 @@ const DiagramPage: NextPage = () => {
         });
       }
     });
+  };
+
+  const handleOpenDiagramModal = () => {
+    if (diagramCode) {
+      setIsDiagramModalOpen(true);
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'No Diagram',
+        description: 'There is no diagram to view in fullscreen.',
+      });
+    }
   };
 
   const handleExportSVG = () => {
@@ -113,13 +138,11 @@ const DiagramPage: NextPage = () => {
   if (!currentUser) return null;
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-screen bg-background overflow-hidden">
       <AppHeader />
-      <main className="flex-grow flex flex-col p-2 gap-2"> {/* Reduced padding and gap */}
-          {/* Top controls section: Prompt, Diagram Type, Export */}
-          <div className="flex flex-col lg:flex-row items-start gap-2 flex-shrink-0"> {/* Reduced gap */}
-            {/* Column 1: Prompt and Diagram Type */}
-            <div className="flex flex-col gap-2 w-full lg:flex-grow-[2] lg:basis-0"> {/* Reduced gap */}
+      <main className="flex-grow flex flex-col p-2 gap-2 overflow-hidden">
+          <div className="flex flex-col lg:flex-row items-start gap-2 flex-shrink-0">
+            <div className="flex flex-col gap-2 w-full lg:flex-grow-[2] lg:basis-0">
               <PromptForm onSubmit={handlePromptSubmit} isLoading={isPending} />
               <Card className="shadow-md">
                 <CardHeader className="py-3 px-4 border-b">
@@ -145,8 +168,7 @@ const DiagramPage: NextPage = () => {
               </Card>
             </div>
 
-            {/* Column 2: Export Controls (becomes sticky on large screens) */}
-             <div className="w-full lg:flex-grow-[1] lg:basis-0 lg:sticky lg:top-[calc(var(--header-height,64px)+0.5rem)]"> {/* Adjusted top for p-2 (0.5rem) */}
+             <div className="w-full lg:flex-grow-[1] lg:basis-0 lg:sticky lg:top-[calc(var(--header-height,64px)+0.5rem)]">
               <ExportControls
                 onExportSVG={handleExportSVG}
                 onExportPNG={handleExportPNG}
@@ -156,20 +178,50 @@ const DiagramPage: NextPage = () => {
             </div>
           </div>
 
-        {/* Resizable Diagram and Code Views */}
         <ResizablePanelGroup
           direction="horizontal"
-          className="rounded-lg border min-h-[800px]" // Removed flex-1, min-h-0, overflow-hidden. Added min-h-[800px]
+          className="flex-1 min-h-0 rounded-lg border" // Ensure it takes remaining space and can shrink
         >
-          <ResizablePanel defaultSize={70} minSize={30}>
-            <DiagramView diagramCode={diagramCode} isLoading={isPending} className="h-full" />
+          <ResizablePanel defaultSize={50} minSize={30}> {/* Diagram smaller by default */}
+            <DiagramView
+              diagramCode={diagramCode}
+              isLoading={isPending}
+              onViewFullScreen={handleOpenDiagramModal}
+              className="h-full"
+            />
           </ResizablePanel>
           <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={30} minSize={20}>
+          <ResizablePanel defaultSize={50} minSize={20}>
              <CodeView diagramCode={diagramCode} onCodeChange={handleCodeChange} isLoading={isPending} className="h-full"/>
           </ResizablePanel>
         </ResizablePanelGroup>
       </main>
+
+      <Dialog open={isDiagramModalOpen} onOpenChange={setIsDiagramModalOpen}>
+        <DialogContent className="p-0 m-0 w-[calc(100vw-2rem)] h-[calc(100vh-2rem)] max-w-none max-h-none rounded-lg flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm">
+          <DialogClose asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-3 left-3 z-50 text-foreground hover:bg-muted/50"
+              aria-label="Close fullscreen diagram"
+            >
+              <XIcon className="h-6 w-6" />
+            </Button>
+          </DialogClose>
+          <div className="w-full h-full p-8 overflow-auto flex items-center justify-center">
+            {isPending && isDiagramModalOpen && (
+                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-card/80 backdrop-blur-sm z-10">
+                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                    <p className="mt-3 text-lg text-foreground">Loading Diagram...</p>
+                </div>
+            )}
+            <div id="mermaid-modal-diagram-container" className="min-w-full min-h-full flex items-center justify-center">
+              {/* Diagram will be rendered here by useEffect */}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
