@@ -1,3 +1,4 @@
+
 // src/components/diagram/prompt-form.tsx
 "use client";
 
@@ -36,7 +37,7 @@ const PromptForm: FC<PromptFormProps> = ({ onSubmit, isLoading }) => {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="e.g., A flowchart for user login process with success and failure paths."
-            rows={3}
+            rows={2} // Reduced from 3 to 2
             className="resize-none bg-input focus-visible:ring-accent"
             disabled={isLoading}
             aria-label="Diagram Prompt Input"
@@ -65,3 +66,5 @@ const PromptForm: FC<PromptFormProps> = ({ onSubmit, isLoading }) => {
 };
 
 export default PromptForm;
+
+    

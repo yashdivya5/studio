@@ -1,3 +1,4 @@
+
 // src/components/diagram/diagram-view.tsx
 "use client";
 
@@ -47,7 +48,7 @@ const DiagramView: FC<DiagramViewProps> = ({ diagramCode, isLoading, className =
   }, [diagramCode, isLoading]); // diagramContainerId is stable
 
   return (
-    <div className={`relative flex-grow bg-card p-4 md:p-6 rounded-lg shadow-lg overflow-auto ${className}`}>
+    <div className={`relative flex-grow bg-card p-3 md:p-4 rounded-lg shadow-lg overflow-auto ${className}`}>
       {isLoading && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-card/80 backdrop-blur-sm z-10">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -78,3 +79,5 @@ const DiagramView: FC<DiagramViewProps> = ({ diagramCode, isLoading, className =
 };
 
 export default DiagramView;
+
+    
