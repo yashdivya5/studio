@@ -15,7 +15,11 @@ import type { DiagramGenerationInput } from '@/ai/flows/diagram-generation';
 import { useToast } from '@/hooks/use-toast';
 import { renderMermaidDiagram, exportSVG, exportPNG, exportJSON } from '@/lib/mermaid-utils';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
-import { Loader2 } from 'lucide-react';
+import { Loader2, Network } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
 
 const DiagramPage: NextPage = () => {
   const { currentUser, isLoading: authLoading } = useAuth();
@@ -26,6 +30,19 @@ const DiagramPage: NextPage = () => {
   const [diagramCode, setDiagramCode] = useState<string>('');
   const [currentSvgContent, setCurrentSvgContent] = useState<string>('');
   const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
+  const [diagramType, setDiagramType] = useState<string>('flowchart');
+
+  const diagramTypes = [
+    { value: 'flowchart', label: 'Flowchart' },
+    { value: 'classDiagram', label: 'UML Class Diagram' },
+    { value: 'sequenceDiagram', label: 'UML Sequence Diagram' },
+    { value: 'stateDiagram', label: 'UML State Diagram' },
+    { value: 'erDiagram', label: 'ER Diagram' },
+    { value: 'gantt', label: 'Gantt Chart' },
+    { value: 'mindmap', label: 'Mind Map' },
+    { value: 'timeline', label: 'Timeline' },
+    // Mermaid also supports C4, Sankey, XYChart, Pie, Quadrant charts which could be added
+  ];
 
   useEffect(() => {
     if (!authLoading && !currentUser) {
@@ -33,7 +50,6 @@ const DiagramPage: NextPage = () => {
     }
   }, [currentUser, authLoading, router]);
 
-  // Debounced rendering for code view changes
   const debouncedRenderDiagram = useCallback(
     debounce((code: string) => {
       startTransition(async () => {
@@ -49,10 +65,13 @@ const DiagramPage: NextPage = () => {
     debouncedRenderDiagram(newCode);
   };
 
-  const handlePromptSubmit = async (prompt: string) => {
+  const handlePromptSubmit = async (promptText: string) => {
     startTransition(async () => {
       try {
-        const input: DiagramGenerationInput = { prompt };
+        // Future: Could incorporate diagramType into the prompt, e.g., by prefixing or contextualizing.
+        // For now, diagramType is a UI element and the AI prompt for diagram generation is generic.
+        // Example: const fullPrompt = `Create a ${diagramTypes.find(d => d.value === diagramType)?.label || 'diagram'} for: ${promptText}`;
+        const input: DiagramGenerationInput = { prompt: promptText };
         const result = await generateDiagram(input);
         setDiagramCode(result.diagramCode);
         const svg = await renderMermaidDiagram('mermaid-diagram-container', result.diagramCode);
@@ -95,25 +114,50 @@ const DiagramPage: NextPage = () => {
     );
   }
   
-  if (!currentUser) return null; // Or a redirect component
+  if (!currentUser) return null;
 
   return (
     <div className={`flex flex-col h-screen bg-background ${isFullScreen ? 'fixed inset-0 z-[100]' : ''}`}>
       {!isFullScreen && <AppHeader />}
       <main className="flex-grow flex flex-col p-4 md:p-6 gap-4 md:gap-6 overflow-hidden">
         {!isFullScreen && (
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-             <div className="w-full md:w-auto md:flex-1 md:max-w-xl">
+          <div className="flex flex-col lg:flex-row items-start gap-4">
+            <div className="flex flex-col gap-4 w-full lg:flex-grow-[2] lg:basis-0"> {/* Prompt + Type (takes more space) */}
               <PromptForm onSubmit={handlePromptSubmit} isLoading={isPending} />
-             </div>
-            <ExportControls
-              onExportSVG={handleExportSVG}
-              onExportPNG={handleExportPNG}
-              onExportJSON={handleExportJSON}
-              onToggleFullScreen={handleToggleFullScreen}
-              isFullScreen={isFullScreen}
-              canExport={!!diagramCode}
-            />
+              <Card className="shadow-md">
+                <CardHeader className="py-3 px-4 border-b">
+                  <CardTitle className="text-lg flex items-center text-primary">
+                    <Network className="mr-2 h-5 w-5" />
+                    Diagram Type
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <Select value={diagramType} onValueChange={setDiagramType}>
+                    <SelectTrigger id="diagram-type-select" className="w-full bg-input focus-visible:ring-accent">
+                      <SelectValue placeholder="Select diagram type..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {diagramTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="w-full lg:flex-grow-[1] lg:basis-0 lg:sticky lg:top-[calc(var(--header-height,64px)+1.5rem)]"> {/* Export Controls (takes less space and can be sticky) */}
+              <ExportControls
+                onExportSVG={handleExportSVG}
+                onExportPNG={handleExportPNG}
+                onExportJSON={handleExportJSON}
+                onToggleFullScreen={handleToggleFullScreen}
+                isFullScreen={isFullScreen}
+                canExport={!!diagramCode}
+              />
+            </div>
           </div>
         )}
         
@@ -138,7 +182,6 @@ const DiagramPage: NextPage = () => {
   );
 };
 
-// Simple debounce function
 function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
   let timeout: NodeJS.Timeout;
   return (...args: Parameters<F>): Promise<ReturnType<F>> =>
