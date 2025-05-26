@@ -1,53 +1,63 @@
+
 "use client"
 
 import * as React from "react"
 import { GripVertical } from "lucide-react"
-import { ImperativePanelHandle, PanelOnCollapse, PanelOnExpand, PanelResizeHandle } from "react-resizable-panels"
+import {
+  ImperativePanelHandle, // For Panel
+  PanelOnCollapse,       // For Panel
+  PanelOnExpand,         // For Panel
+  PanelResizeHandle,     // For ResizableHandle component
+  PanelProps,            // For ResizablePanel props
+  PanelGroupProps,       // For ResizablePanelGroup props
+  ImperativePanelGroupHandle // For ResizablePanelGroup ref
+} from "react-resizable-panels"
 
 import { cn } from "@/lib/utils"
 
-const ResizablePanelGroup = React.forwardRef<
-  ImperativePanelHandle,
-  React.ComponentProps<typeof PanelResizeHandle> & {
-    className?: string
-    direction: "horizontal" | "vertical"
-  }
->(({ className, direction, children, ...props }, ref) => (
-  // @ts-expect-error TODO: fix this type
-  <PanelResizeHandle
-    ref={ref}
-    className={cn(
-      "flex h-full w-full data-[panel-group-direction=vertical]:flex-col",
-      className
-    )}
-    {...props}
-  >
-    {/* @ts-expect-error TODO: fix this type */}
-    <PanelGroup direction={direction}>{children}</PanelGroup>
-  </PanelResizeHandle>
-))
-ResizablePanelGroup.displayName = "ResizablePanelGroup"
-
+// Define lazy-loaded components first
 const PanelGroup = React.lazy(
   () => import("react-resizable-panels").then((mod) => ({ default: mod.PanelGroup }))
 )
 
+const Panel = React.lazy(() =>
+  import("react-resizable-panels").then((mod) => ({ default: mod.Panel }))
+)
+
+const ResizablePanelGroup = React.forwardRef<
+  ImperativePanelGroupHandle,
+  PanelGroupProps & {
+    className?: string
+  }
+>(({ className, direction, children, ...props }, ref) => (
+  <React.Suspense fallback={
+      <div className={cn(
+          "flex h-full w-full animate-pulse items-center justify-center rounded-lg bg-muted",
+          className
+      )} />
+  }>
+    <PanelGroup
+      ref={ref}
+      direction={direction}
+      className={cn(
+        "flex h-full w-full data-[panel-group-direction=vertical]:flex-col",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </PanelGroup>
+  </React.Suspense>
+))
+ResizablePanelGroup.displayName = "ResizablePanelGroup"
+
+
 const ResizablePanel = React.forwardRef<
   ImperativePanelHandle,
-  Omit<React.ComponentProps<typeof PanelResizeHandle>, "children" | "onCollapse" | "onExpand"> & {
-    children?: React.ReactNode
-    className?: string
-    collapsedSize?: number
-    collapsible?: boolean
-    defaultSize?: number
-    minSize?: number
-    onCollapse?: PanelOnCollapse
-    onExpand?: PanelOnExpand
+  PanelProps & {
+    className?: string;
   }
 >(({ className, children, ...props }, ref) => {
-  const Panel = React.lazy(() =>
-    import("react-resizable-panels").then((mod) => ({ default: mod.Panel }))
-  )
   return (
     <React.Suspense
       fallback={
@@ -59,7 +69,6 @@ const ResizablePanel = React.forwardRef<
         />
       }
     >
-      {/* @ts-expect-error TODO: fix this type */}
       <Panel ref={ref} className={className} {...props}>
         {children}
       </Panel>
@@ -69,13 +78,12 @@ const ResizablePanel = React.forwardRef<
 ResizablePanel.displayName = "ResizablePanel"
 
 const ResizableHandle = React.forwardRef<
-  ImperativePanelHandle,
+  HTMLButtonElement, // Correct ref type for PanelResizeHandle
   React.ComponentProps<typeof PanelResizeHandle> & {
     className?: string
     withHandle?: boolean
   }
 >(({ className, withHandle, children, ...props }, ref) => (
-  // @ts-expect-error TODO: fix this type
   <PanelResizeHandle
     ref={ref}
     className={cn(
