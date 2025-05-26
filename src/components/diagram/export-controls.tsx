@@ -3,21 +3,19 @@
 
 import type { FC } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, FileImage, FileJson, Expand, Minimize, CodeXml } from 'lucide-react'; // Added CodeXml
+import { Download, FileImage, FileJson, CodeXml } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Card, CardContent } from '@/components/ui/card'; // Added Card for better grouping
+import { Card, CardContent } from '@/components/ui/card';
 
 interface ExportControlsProps {
   onExportSVG: () => void;
   onExportPNG: () => void;
   onExportJSON: () => void;
-  onToggleFullScreen: () => void;
-  isFullScreen: boolean;
   canExport: boolean;
 }
 
@@ -25,8 +23,6 @@ const ExportControls: FC<ExportControlsProps> = ({
   onExportSVG, 
   onExportPNG, 
   onExportJSON,
-  onToggleFullScreen,
-  isFullScreen,
   canExport
 }) => {
   return (
@@ -40,7 +36,7 @@ const ExportControls: FC<ExportControlsProps> = ({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[220px]">
             <DropdownMenuItem onClick={onExportSVG} disabled={!canExport}>
-              <CodeXml className="mr-2 h-4 w-4" /> {/* Replaced custom SVG with Lucide icon */}
+              <CodeXml className="mr-2 h-4 w-4" />
               Export as SVG
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onExportPNG} disabled={!canExport}>
@@ -53,10 +49,6 @@ const ExportControls: FC<ExportControlsProps> = ({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <Button variant="outline" onClick={onToggleFullScreen} className="w-full sm:w-auto border-primary text-primary hover:bg-primary/10 hover:text-primary flex-grow">
-          {isFullScreen ? <Minimize className="mr-2 h-4 w-4" /> : <Expand className="mr-2 h-4 w-4" />}
-          {isFullScreen ? 'Exit Fullscreen' : 'Fullscreen'}
-        </Button>
       </CardContent>
     </Card>
   );

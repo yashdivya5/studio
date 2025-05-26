@@ -17,7 +17,6 @@ import { renderMermaidDiagram, exportSVG, exportPNG, exportJSON } from '@/lib/me
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
 import { Loader2, Network } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 
@@ -29,7 +28,6 @@ const DiagramPage: NextPage = () => {
 
   const [diagramCode, setDiagramCode] = useState<string>('');
   const [currentSvgContent, setCurrentSvgContent] = useState<string>('');
-  const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
   const [diagramType, setDiagramType] = useState<string>('flowchart');
 
   const diagramTypes = [
@@ -41,7 +39,6 @@ const DiagramPage: NextPage = () => {
     { value: 'gantt', label: 'Gantt Chart' },
     { value: 'mindmap', label: 'Mind Map' },
     { value: 'timeline', label: 'Timeline' },
-    // Mermaid also supports C4, Sankey, XYChart, Pie, Quadrant charts which could be added
   ];
 
   useEffect(() => {
@@ -68,10 +65,8 @@ const DiagramPage: NextPage = () => {
   const handlePromptSubmit = async (promptText: string) => {
     startTransition(async () => {
       try {
-        // Future: Could incorporate diagramType into the prompt, e.g., by prefixing or contextualizing.
-        // For now, diagramType is a UI element and the AI prompt for diagram generation is generic.
-        // Example: const fullPrompt = `Create a ${diagramTypes.find(d => d.value === diagramType)?.label || 'diagram'} for: ${promptText}`;
-        const input: DiagramGenerationInput = { prompt: promptText };
+        const fullPrompt = `Create a ${diagramTypes.find(d => d.value === diagramType)?.label || 'diagram'} for: ${promptText}. Ensure the output is only the raw diagram code itself, starting directly with the diagram type (e.g., 'graph TD', 'classDiagram'), and does not include any markdown fences like \`\`\`mermaid or \`\`\`.`;
+        const input: DiagramGenerationInput = { prompt: fullPrompt };
         const result = await generateDiagram(input);
         setDiagramCode(result.diagramCode);
         const svg = await renderMermaidDiagram('mermaid-diagram-container', result.diagramCode);
@@ -104,7 +99,6 @@ const DiagramPage: NextPage = () => {
     else toast({ variant: 'destructive', title: 'Cannot Export', description: 'No diagram code to export as JSON.' });
   };
 
-  const handleToggleFullScreen = () => setIsFullScreen(!isFullScreen);
 
   if (authLoading) {
     return (
@@ -117,10 +111,9 @@ const DiagramPage: NextPage = () => {
   if (!currentUser) return null;
 
   return (
-    <div className={`flex flex-col h-screen bg-background ${isFullScreen ? 'fixed inset-0 z-[100]' : ''}`}>
-      {!isFullScreen && <AppHeader />}
+    <div className="flex flex-col h-screen bg-background">
+      <AppHeader />
       <main className="flex-grow flex flex-col p-4 md:p-6 gap-4 md:gap-6 overflow-hidden">
-        {!isFullScreen && (
           <div className="flex flex-col lg:flex-row items-start gap-4">
             <div className="flex flex-col gap-4 w-full lg:flex-grow-[2] lg:basis-0"> {/* Prompt + Type (takes more space) */}
               <PromptForm onSubmit={handlePromptSubmit} isLoading={isPending} />
@@ -148,34 +141,27 @@ const DiagramPage: NextPage = () => {
               </Card>
             </div>
 
-            <div className="w-full lg:flex-grow-[1] lg:basis-0 lg:sticky lg:top-[calc(var(--header-height,64px)+1.5rem)]"> {/* Export Controls (takes less space and can be sticky) */}
+            <div className="w-full lg:flex-grow-[1] lg:basis-0 lg:sticky lg:top-[calc(var(--header-height,64px)+1.5rem)]">
               <ExportControls
                 onExportSVG={handleExportSVG}
                 onExportPNG={handleExportPNG}
                 onExportJSON={handleExportJSON}
-                onToggleFullScreen={handleToggleFullScreen}
-                isFullScreen={isFullScreen}
                 canExport={!!diagramCode}
               />
             </div>
           </div>
-        )}
         
         <ResizablePanelGroup 
           direction="horizontal"
-          className={`flex-grow rounded-lg border overflow-hidden ${isFullScreen ? 'h-full' : 'min-h-[400px] md:min-h-0'}`}
+          className="flex-grow rounded-lg border overflow-hidden min-h-[400px] md:min-h-0"
         >
-          <ResizablePanel defaultSize={isFullScreen ? 100 : 60} minSize={30}>
-            <DiagramView diagramCode={diagramCode} isLoading={isPending} className={isFullScreen ? "h-full" : ""} />
+          <ResizablePanel defaultSize={70} minSize={30}>
+            <DiagramView diagramCode={diagramCode} isLoading={isPending} className="h-full" />
           </ResizablePanel>
-          {!isFullScreen && (
-            <>
-              <ResizableHandle withHandle />
-              <ResizablePanel defaultSize={40} minSize={20}>
-                 <CodeView diagramCode={diagramCode} onCodeChange={handleCodeChange} isLoading={isPending} className="h-full"/>
-              </ResizablePanel>
-            </>
-          )}
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={30} minSize={20}>
+             <CodeView diagramCode={diagramCode} onCodeChange={handleCodeChange} isLoading={isPending} className="h-full"/>
+          </ResizablePanel>
         </ResizablePanelGroup>
       </main>
     </div>
