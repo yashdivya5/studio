@@ -10,46 +10,50 @@ if (typeof window !== 'undefined') {
   });
 }
 
-export const renderMermaidDiagram = async (elementId: string, code: string): Promise<string | undefined> => {
+const stripMarkdownFences = (code: string): string => {
+  const fenceRegex = /^\s*```(?:mermaid|graphviz)?\s*\n?([\s\S]*?)\n?\s*```\s*$/;
+  const match = code.match(fenceRegex);
+  if (match && match[1]) {
+    return match[1].trim();
+  }
+  return code.trim();
+};
+
+export const renderMermaidDiagram = async (elementId: string, rawCode: string): Promise<string | undefined> => {
   const container = document.getElementById(elementId);
 
-  // If the target container doesn't exist in the DOM, we can't render.
   if (!container) {
-    if (code.trim()) { // Only log a warning if we actually had code to render
+    if (rawCode.trim()) {
       console.warn(`Mermaid container with id '${elementId}' not found in DOM. Cannot render diagram.`);
     }
     return undefined;
   }
 
-  // If no code is provided (or code is whitespace), clear the container.
-  if (!code.trim()) {
+  const code = stripMarkdownFences(rawCode);
+
+  if (!code) {
     container.innerHTML = '';
-    return undefined; // No SVG rendered
+    return undefined; 
   }
 
   try {
-    // Mermaid's render function generates an SVG string.
-    // The first argument is a unique ID for the SVG itself.
     const internalSvgId = `mermaid-svg-${elementId}-${Date.now()}`;
     const { svg, bindFunctions } = await mermaid.render(internalSvgId, code);
 
-    // Place the rendered SVG into our container.
     container.innerHTML = svg;
 
-    // If mermaid provides bindFunctions (for interactivity like clickable nodes), call it.
     if (bindFunctions) {
       bindFunctions(container);
     }
     return svg;
   } catch (error) {
     console.error('Mermaid rendering error:', error);
-    // Display a user-friendly error message within the container.
     container.innerHTML = `<div class="p-4 text-destructive bg-destructive/10 border border-destructive rounded-md">
         <p class="font-semibold">Error rendering diagram:</p>
         <pre class="mt-2 text-sm whitespace-pre-wrap">${(error as Error).message || 'Unknown error'}</pre>
-        <p class="mt-2 text-xs">Please check your diagram code for syntax errors.</p>
+        <p class="mt-2 text-xs">Please check your diagram code for syntax errors. Ensure it does not include Markdown fences like \`\`\`mermaid.\`\`\`</p>
       </div>`;
-    return undefined; // Error occurred
+    return undefined;
   }
 };
 
@@ -61,7 +65,7 @@ export const exportSVG = (svgContent: string, filename: string = 'diagram.svg') 
   link.download = filename;
   document.body.appendChild(link);
   link.click();
-  if (document.body.contains(link)) { // Defensive check
+  if (document.body.contains(link)) { 
     document.body.removeChild(link);
   }
   URL.revokeObjectURL(url);
@@ -77,13 +81,11 @@ export const exportPNG = (svgContent: string, filename: string = 'diagram.png') 
   const url = URL.createObjectURL(svgBlob);
 
   img.onload = () => {
-    // Add some padding for better aesthetics
     const padding = 20;
     canvas.width = img.width + padding * 2;
     canvas.height = img.height + padding * 2;
 
-    // Fill background (optional, for transparency handling)
-    ctx.fillStyle = 'hsl(var(--background))'; // Use CSS variable for background
+    ctx.fillStyle = 'hsl(var(--background))'; 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     ctx.drawImage(img, padding, padding);
@@ -95,7 +97,7 @@ export const exportPNG = (svgContent: string, filename: string = 'diagram.png') 
     link.download = filename;
     document.body.appendChild(link);
     link.click();
-    if (document.body.contains(link)) { // Defensive check
+    if (document.body.contains(link)) { 
         document.body.removeChild(link);
     }
   };
@@ -107,7 +109,7 @@ export const exportPNG = (svgContent: string, filename: string = 'diagram.png') 
 };
 
 export const exportJSON = (diagramCode: string, filename: string = 'diagram.json') => {
-  const jsonData = JSON.stringify({ diagramCode }, null, 2);
+  const jsonData = JSON.stringify({ diagramCode: stripMarkdownFences(diagramCode) }, null, 2); // Also strip for JSON export
   const blob = new Blob([jsonData], { type: 'application/json;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -115,7 +117,7 @@ export const exportJSON = (diagramCode: string, filename: string = 'diagram.json
   link.download = filename;
   document.body.appendChild(link);
   link.click();
-  if (document.body.contains(link)) { // Defensive check
+  if (document.body.contains(link)) { 
     document.body.removeChild(link);
   }
   URL.revokeObjectURL(url);

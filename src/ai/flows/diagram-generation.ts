@@ -36,7 +36,9 @@ const diagramGenerationPrompt = ai.definePrompt({
 
   The diagram code should be in Mermaid or Graphviz format.
   Ensure the code is valid and complete.
-  `, // Ensure the code is valid and complete.
+  IMPORTANT: Do NOT wrap the diagram code in Markdown code fences (e.g., \`\`\`mermaid ... \`\`\` or \`\`\` ... \`\`\`).
+  The output should be only the raw diagram code itself, starting directly with the diagram type (e.g., 'graph TD', 'classDiagram').
+  `,
 });
 
 const diagramGenerationFlow = ai.defineFlow(
@@ -47,6 +49,14 @@ const diagramGenerationFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await diagramGenerationPrompt(input);
+    // Additional check to remove fences if AI still includes them, though the prompt should prevent it.
+    if (output && output.diagramCode) {
+        const fenceRegex = /^\s*```(?:mermaid)?\s*\n?([\s\S]*?)\n?\s*```\s*$/;
+        const match = output.diagramCode.match(fenceRegex);
+        if (match && match[1]) {
+            output.diagramCode = match[1].trim();
+        }
+    }
     return output!;
   }
 );
