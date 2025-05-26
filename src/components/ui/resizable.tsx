@@ -4,25 +4,16 @@
 import * as React from "react"
 import { GripVertical } from "lucide-react"
 import {
-  ImperativePanelHandle, // For Panel
-  PanelOnCollapse,       // For Panel
-  PanelOnExpand,         // For Panel
-  PanelResizeHandle,     // For ResizableHandle component
-  PanelProps,            // For ResizablePanel props
-  PanelGroupProps,       // For ResizablePanelGroup props
-  ImperativePanelGroupHandle // For ResizablePanelGroup ref
+  PanelGroup, // Direct import
+  Panel,      // Direct import
+  PanelResizeHandle,
+  type ImperativePanelHandle, // For Panel ref
+  type PanelProps,            // For ResizablePanel props
+  type PanelGroupProps,       // For ResizablePanelGroup props
+  type ImperativePanelGroupHandle // For ResizablePanelGroup ref
 } from "react-resizable-panels"
 
 import { cn } from "@/lib/utils"
-
-// Define lazy-loaded components first
-const PanelGroup = React.lazy(
-  () => import("react-resizable-panels").then((mod) => ({ default: mod.PanelGroup }))
-)
-
-const Panel = React.lazy(() =>
-  import("react-resizable-panels").then((mod) => ({ default: mod.Panel }))
-)
 
 const ResizablePanelGroup = React.forwardRef<
   ImperativePanelGroupHandle,
@@ -30,12 +21,6 @@ const ResizablePanelGroup = React.forwardRef<
     className?: string
   }
 >(({ className, direction, children, ...props }, ref) => (
-  <React.Suspense fallback={
-      <div className={cn(
-          "flex h-full w-full animate-pulse items-center justify-center rounded-lg bg-muted",
-          className
-      )} />
-  }>
     <PanelGroup
       ref={ref}
       direction={direction}
@@ -47,7 +32,6 @@ const ResizablePanelGroup = React.forwardRef<
     >
       {children}
     </PanelGroup>
-  </React.Suspense>
 ))
 ResizablePanelGroup.displayName = "ResizablePanelGroup"
 
@@ -59,26 +43,15 @@ const ResizablePanel = React.forwardRef<
   }
 >(({ className, children, ...props }, ref) => {
   return (
-    <React.Suspense
-      fallback={
-        <div
-          className={cn(
-            "flex h-full w-full animate-pulse items-center justify-center rounded-lg bg-muted",
-            className
-          )}
-        />
-      }
-    >
-      <Panel ref={ref} className={className} {...props}>
+      <Panel ref={ref} className={cn(className)} {...props}>
         {children}
       </Panel>
-    </React.Suspense>
   )
 })
 ResizablePanel.displayName = "ResizablePanel"
 
 const ResizableHandle = React.forwardRef<
-  HTMLButtonElement, // Correct ref type for PanelResizeHandle
+  HTMLButtonElement,
   React.ComponentProps<typeof PanelResizeHandle> & {
     className?: string
     withHandle?: boolean
