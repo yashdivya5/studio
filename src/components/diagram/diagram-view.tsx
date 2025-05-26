@@ -15,8 +15,6 @@ interface DiagramViewProps {
 
 const DiagramView: FC<DiagramViewProps> = ({ diagramCode, isLoading, className = "" }) => {
   const diagramContainerId = 'mermaid-diagram-container';
-  // This ref is attached to the div that should contain the Mermaid diagram.
-  // It will be null if React hasn't rendered that div (e.g., when diagramCode is empty).
   const diagramContainerRef = useRef<HTMLDivElement>(null);
   const prevCodeRef = useRef<string | undefined>();
   const prevIsLoadingRef = useRef<boolean | undefined>();
@@ -26,29 +24,21 @@ const DiagramView: FC<DiagramViewProps> = ({ diagramCode, isLoading, className =
 
     if (!isLoading) {
       if (diagramCode && containerElement) {
-        // Condition to (re)render: code changed, or loading finished with code present.
         if (diagramCode !== prevCodeRef.current || (prevIsLoadingRef.current === true && !isLoading)) {
           renderMermaidDiagram(diagramContainerId, diagramCode);
         }
       } else if (!diagramCode && containerElement) {
-        // This case handles when diagramCode becomes empty after being non-empty,
-        // and React, for some reason, hasn't removed the containerElement from the DOM
-        // (which it should, based on the conditional rendering below).
-        // Clear the diagram content.
         renderMermaidDiagram(diagramContainerId, "");
       }
-      // If !diagramCode AND !containerElement:
-      // React shows the placeholder. The effect does nothing related to Mermaid rendering, which is correct.
     }
 
-    // Update previous values for the next render's comparison.
     prevCodeRef.current = diagramCode;
     prevIsLoadingRef.current = isLoading;
 
-  }, [diagramCode, isLoading]); // diagramContainerId is stable
+  }, [diagramCode, isLoading]);
 
   return (
-    <div className={`relative flex-grow bg-card p-3 md:p-4 rounded-lg shadow-lg overflow-auto ${className}`}>
+    <div className={`relative flex-grow bg-card p-2 md:p-3 rounded-lg shadow-lg ${className}`}> {/* Removed overflow-auto, reduced padding */}
       {isLoading && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-card/80 backdrop-blur-sm z-10">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -56,7 +46,6 @@ const DiagramView: FC<DiagramViewProps> = ({ diagramCode, isLoading, className =
         </div>
       )}
 
-      {/* Placeholder: Shown by React when not loading and no diagram code */}
       {!isLoading && !diagramCode && (
         <div className="min-h-[300px] w-full flex items-center justify-center text-center flex-col text-muted-foreground">
           <ImageIcon className="w-24 h-24 mb-4" />
@@ -65,13 +54,11 @@ const DiagramView: FC<DiagramViewProps> = ({ diagramCode, isLoading, className =
         </div>
       )}
 
-      {/* Mermaid Container: Shown by React when not loading and diagram code exists. */}
-      {/* This is the div that renderMermaidDiagram will target. */}
       {!isLoading && diagramCode && (
         <div
           ref={diagramContainerRef}
           id={diagramContainerId}
-          className="min-h-[300px] w-full flex items-center justify-center"
+          className="min-h-[300px] w-full flex items-center justify-center" // Mermaid will control height of its SVG
         />
       )}
     </div>
@@ -79,5 +66,3 @@ const DiagramView: FC<DiagramViewProps> = ({ diagramCode, isLoading, className =
 };
 
 export default DiagramView;
-
-    

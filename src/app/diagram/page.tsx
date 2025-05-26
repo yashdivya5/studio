@@ -115,11 +115,11 @@ const DiagramPage: NextPage = () => {
   return (
     <div className="flex flex-col h-screen bg-background">
       <AppHeader />
-      <main className="flex-grow flex flex-col p-3 gap-3 overflow-hidden">
+      <main className="flex-grow flex flex-col p-2 gap-2"> {/* Reduced padding and gap */}
           {/* Top controls section: Prompt, Diagram Type, Export */}
-          <div className="flex flex-col lg:flex-row items-start gap-3 flex-shrink-0">
+          <div className="flex flex-col lg:flex-row items-start gap-2 flex-shrink-0"> {/* Reduced gap */}
             {/* Column 1: Prompt and Diagram Type */}
-            <div className="flex flex-col gap-3 w-full lg:flex-grow-[2] lg:basis-0">
+            <div className="flex flex-col gap-2 w-full lg:flex-grow-[2] lg:basis-0"> {/* Reduced gap */}
               <PromptForm onSubmit={handlePromptSubmit} isLoading={isPending} />
               <Card className="shadow-md">
                 <CardHeader className="py-3 px-4 border-b">
@@ -146,7 +146,7 @@ const DiagramPage: NextPage = () => {
             </div>
 
             {/* Column 2: Export Controls (becomes sticky on large screens) */}
-            <div className="w-full lg:flex-grow-[1] lg:basis-0 lg:sticky lg:top-[calc(var(--header-height,64px)+0.75rem)]"> {/* Adjusted top for p-3 (0.75rem) */}
+             <div className="w-full lg:flex-grow-[1] lg:basis-0 lg:sticky lg:top-[calc(var(--header-height,64px)+0.5rem)]"> {/* Adjusted top for p-2 (0.5rem) */}
               <ExportControls
                 onExportSVG={handleExportSVG}
                 onExportPNG={handleExportPNG}
@@ -159,7 +159,7 @@ const DiagramPage: NextPage = () => {
         {/* Resizable Diagram and Code Views */}
         <ResizablePanelGroup
           direction="horizontal"
-          className="flex-1 rounded-lg border overflow-hidden min-h-0" // flex-1 and min-h-0 to fill remaining space
+          className="rounded-lg border min-h-[800px]" // Removed flex-1, min-h-0, overflow-hidden. Added min-h-[800px]
         >
           <ResizablePanel defaultSize={70} minSize={30}>
             <DiagramView diagramCode={diagramCode} isLoading={isPending} className="h-full" />
@@ -186,5 +186,3 @@ function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
 }
 
 export default DiagramPage;
-
-    
