@@ -14,17 +14,37 @@ interface DiagramViewProps {
 
 const DiagramView: FC<DiagramViewProps> = ({ diagramCode, isLoading, className = "" }) => {
   const diagramContainerId = 'mermaid-diagram-container';
-  const prevCodeRef = useRef<string>();
+  // This ref is attached to the div that should contain the Mermaid diagram.
+  // It will be null if React hasn't rendered that div (e.g., when diagramCode is empty).
+  const diagramContainerRef = useRef<HTMLDivElement>(null);
+  const prevCodeRef = useRef<string | undefined>();
+  const prevIsLoadingRef = useRef<boolean | undefined>();
 
   useEffect(() => {
-    // Only re-render if code actually changes or loading state finishes
-    if (diagramCode !== prevCodeRef.current || (prevCodeRef.current && isLoading === false)) {
-       if(!isLoading) { // Don't render if currently loading new diagram
-        renderMermaidDiagram(diagramContainerId, diagramCode);
-        prevCodeRef.current = diagramCode;
-       }
+    const containerElement = diagramContainerRef.current;
+
+    if (!isLoading) {
+      if (diagramCode && containerElement) {
+        // Condition to (re)render: code changed, or loading finished with code present.
+        if (diagramCode !== prevCodeRef.current || (prevIsLoadingRef.current === true && !isLoading)) {
+          renderMermaidDiagram(diagramContainerId, diagramCode);
+        }
+      } else if (!diagramCode && containerElement) {
+        // This case handles when diagramCode becomes empty after being non-empty,
+        // and React, for some reason, hasn't removed the containerElement from the DOM
+        // (which it should, based on the conditional rendering below).
+        // Clear the diagram content.
+        renderMermaidDiagram(diagramContainerId, "");
+      }
+      // If !diagramCode AND !containerElement:
+      // React shows the placeholder. The effect does nothing related to Mermaid rendering, which is correct.
     }
-  }, [diagramCode, isLoading]);
+
+    // Update previous values for the next render's comparison.
+    prevCodeRef.current = diagramCode;
+    prevIsLoadingRef.current = isLoading;
+
+  }, [diagramCode, isLoading]); // diagramContainerId is stable
 
   return (
     <div className={`relative flex-grow bg-card p-4 md:p-6 rounded-lg shadow-lg overflow-auto ${className}`}>
@@ -34,20 +54,25 @@ const DiagramView: FC<DiagramViewProps> = ({ diagramCode, isLoading, className =
           <p className="mt-3 text-lg text-foreground">Generating Diagram...</p>
         </div>
       )}
-      <div 
-        id={diagramContainerId} 
-        className="min-h-[300px] w-full flex items-center justify-center"
-        // Apply Tailwind prose for better default styling of text within SVG if any
-        // className="prose prose-sm dark:prose-invert max-w-none" 
-      >
-        {!diagramCode && !isLoading && (
-           <div className="flex flex-col items-center text-muted-foreground">
-            <ImageIcon className="w-24 h-24 mb-4" />
-            <p className="text-lg">Your diagram will appear here.</p>
-            <p className="text-sm">Use the prompt or code editor to get started.</p>
-          </div>
-        )}
-      </div>
+
+      {/* Placeholder: Shown by React when not loading and no diagram code */}
+      {!isLoading && !diagramCode && (
+        <div className="min-h-[300px] w-full flex items-center justify-center text-center flex-col text-muted-foreground">
+          <ImageIcon className="w-24 h-24 mb-4" />
+          <p className="text-lg">Your diagram will appear here.</p>
+          <p className="text-sm">Use the prompt or code editor to get started.</p>
+        </div>
+      )}
+
+      {/* Mermaid Container: Shown by React when not loading and diagram code exists. */}
+      {/* This is the div that renderMermaidDiagram will target. */}
+      {!isLoading && diagramCode && (
+        <div
+          ref={diagramContainerRef}
+          id={diagramContainerId}
+          className="min-h-[300px] w-full flex items-center justify-center"
+        />
+      )}
     </div>
   );
 };

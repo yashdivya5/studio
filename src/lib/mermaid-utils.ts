@@ -1,54 +1,55 @@
 // src/lib/mermaid-utils.ts
 import mermaid from 'mermaid';
 
-const initializeMermaid = () => {
+// Call initializeMermaid once when the module is loaded, ensuring it runs on client.
+if (typeof window !== 'undefined') {
   mermaid.initialize({
     startOnLoad: false,
     theme: 'neutral', // Using 'neutral' or 'default'. 'forest' is also nice with dark themes.
-    // For custom theming with CSS variables:
-    // theme: 'base',
-    // themeVariables: {
-    //   background: getComputedStyle(document.documentElement).getPropertyValue('--background').trim(),
-    //   primaryColor: getComputedStyle(document.documentElement).getPropertyValue('--primary').trim(),
-    //   primaryTextColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-foreground').trim(),
-    //   lineColor: getComputedStyle(document.documentElement).getPropertyValue('--border').trim(),
-    //   textColor: getComputedStyle(document.documentElement).getPropertyValue('--foreground').trim(),
-    // }
     securityLevel: 'loose', // Or 'strict' or 'antiscript' depending on needs
-    // Other configurations if needed
   });
-};
-
-// Call initializeMermaid once when the module is loaded, ensuring it runs on client.
-if (typeof window !== 'undefined') {
-  initializeMermaid();
 }
 
 export const renderMermaidDiagram = async (elementId: string, code: string): Promise<string | undefined> => {
-  if (!code.trim()) {
-    const container = document.getElementById(elementId);
-    if (container) container.innerHTML = '<p class="text-muted-foreground p-4">Enter a prompt to generate a diagram, or paste Mermaid code.</p>';
-    return;
+  const container = document.getElementById(elementId);
+
+  // If the target container doesn't exist in the DOM, we can't render.
+  if (!container) {
+    if (code.trim()) { // Only log a warning if we actually had code to render
+      console.warn(`Mermaid container with id '${elementId}' not found in DOM. Cannot render diagram.`);
+    }
+    return undefined;
   }
+
+  // If no code is provided (or code is whitespace), clear the container.
+  if (!code.trim()) {
+    container.innerHTML = '';
+    return undefined; // No SVG rendered
+  }
+
   try {
-    // mermaid.mermaidAPI.reset(); // Might be needed if re-rendering causes issues
-    const { svg } = await mermaid.render(elementId + '-svg', code);
-    const container = document.getElementById(elementId);
-    if (container) {
-      container.innerHTML = svg;
+    // Mermaid's render function generates an SVG string.
+    // The first argument is a unique ID for the SVG itself.
+    const internalSvgId = `mermaid-svg-${elementId}-${Date.now()}`;
+    const { svg, bindFunctions } = await mermaid.render(internalSvgId, code);
+
+    // Place the rendered SVG into our container.
+    container.innerHTML = svg;
+
+    // If mermaid provides bindFunctions (for interactivity like clickable nodes), call it.
+    if (bindFunctions) {
+      bindFunctions(container);
     }
     return svg;
   } catch (error) {
     console.error('Mermaid rendering error:', error);
-    const container = document.getElementById(elementId);
-    if (container) {
-      container.innerHTML = `<div class="p-4 text-destructive bg-destructive/10 border border-destructive rounded-md">
+    // Display a user-friendly error message within the container.
+    container.innerHTML = `<div class="p-4 text-destructive bg-destructive/10 border border-destructive rounded-md">
         <p class="font-semibold">Error rendering diagram:</p>
         <pre class="mt-2 text-sm whitespace-pre-wrap">${(error as Error).message || 'Unknown error'}</pre>
         <p class="mt-2 text-xs">Please check your diagram code for syntax errors.</p>
       </div>`;
-    }
-    return undefined;
+    return undefined; // Error occurred
   }
 };
 
@@ -60,7 +61,9 @@ export const exportSVG = (svgContent: string, filename: string = 'diagram.svg') 
   link.download = filename;
   document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
+  if (document.body.contains(link)) { // Defensive check
+    document.body.removeChild(link);
+  }
   URL.revokeObjectURL(url);
 };
 
@@ -92,7 +95,9 @@ export const exportPNG = (svgContent: string, filename: string = 'diagram.png') 
     link.download = filename;
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    if (document.body.contains(link)) { // Defensive check
+        document.body.removeChild(link);
+    }
   };
   img.onerror = (e) => {
     console.error("Error loading SVG for PNG export:", e);
@@ -110,6 +115,8 @@ export const exportJSON = (diagramCode: string, filename: string = 'diagram.json
   link.download = filename;
   document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
+  if (document.body.contains(link)) { // Defensive check
+    document.body.removeChild(link);
+  }
   URL.revokeObjectURL(url);
 };
