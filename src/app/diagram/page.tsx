@@ -56,7 +56,7 @@ const DiagramPage: NextPage = () => {
         if (svg) setCurrentSvgContent(svg);
       });
     }, 500),
-    [] 
+    []
   );
 
   const handleCodeChange = (newCode: string) => {
@@ -67,7 +67,7 @@ const DiagramPage: NextPage = () => {
   const handlePromptSubmit = async (promptText: string) => {
     startTransition(async () => {
       try {
-        const fullPrompt = \`Create a ${diagramTypes.find(d => d.value === diagramType)?.label || 'diagram'} for: ${promptText}. Ensure the output is only the raw diagram code itself, starting directly with the diagram type (e.g., 'graph TD', 'classDiagram'), and does not include any markdown fences like \`\`\`mermaid or \`\`\`.\`;
+        const fullPrompt = `Create a ${diagramTypes.find(d => d.value === diagramType)?.label || 'diagram'} for: ${promptText}. Ensure the output is only the raw diagram code itself, starting directly with the diagram type (e.g., 'graph TD', 'classDiagram'), and does not include any markdown fences like \`\`\`mermaid or \`\`\`.`;
         const input: DiagramGenerationInput = { prompt: fullPrompt };
         const result = await generateDiagram(input);
         setDiagramCode(result.diagramCode);
@@ -109,7 +109,7 @@ const DiagramPage: NextPage = () => {
       </div>
     );
   }
-  
+
   if (!currentUser) return null;
 
   return (
@@ -155,9 +155,9 @@ const DiagramPage: NextPage = () => {
               />
             </div>
           </div>
-        
+
         {/* Resizable Diagram and Code Views */}
-        <ResizablePanelGroup 
+        <ResizablePanelGroup
           direction="horizontal"
           className="flex-1 rounded-lg border overflow-hidden min-h-0" // flex-1 and min-h-0 to fill remaining space
         >
@@ -186,5 +186,3 @@ function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
 }
 
 export default DiagramPage;
-
-    
