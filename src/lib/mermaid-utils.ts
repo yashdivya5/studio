@@ -6,8 +6,8 @@ import mermaid from 'mermaid';
 if (typeof window !== 'undefined') {
   mermaid.initialize({
     startOnLoad: false,
-    theme: 'neutral', // Using 'neutral' or 'default'. 'forest' is also nice with dark themes.
-    securityLevel: 'loose', // Or 'strict' or 'antiscript' depending on needs
+    theme: 'neutral',
+    securityLevel: 'loose',
   });
 }
 
@@ -38,21 +38,16 @@ export const renderMermaidDiagram = async (elementId: string, rawCode: string): 
   }
 
   try {
-    // The first argument is a unique ID for the SVG itself.
     const internalSvgId = `mermaid-svg-${elementId}-${Date.now()}`;
     const { svg, bindFunctions } = await mermaid.render(internalSvgId, code);
-
-    // Place the rendered SVG into our container.
     container.innerHTML = svg;
-
-    // Bind any event handlers if necessary (e.g., for clickable nodes).
     if (bindFunctions) {
       bindFunctions(container);
     }
     return svg;
   } catch (error) {
     console.error('Mermaid rendering error:', error);
-    console.error('Problematic Mermaid code passed to render:', code); // Log the problematic code
+    console.error('Problematic Mermaid code passed to render:', code);
     container.innerHTML = `<div class="p-4 text-destructive bg-destructive/10 border border-destructive rounded-md">
         <p class="font-semibold">Error rendering diagram:</p>
         <pre class="mt-2 text-sm whitespace-pre-wrap">${(error as Error).message || 'Unknown error'}</pre>
@@ -81,52 +76,71 @@ export const exportSVG = (svgContent: string, filename: string = 'diagram.svg') 
 export const exportPNG = (svgContent: string, filename: string = 'diagram.png') => {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
-  if (!ctx) return;
+  if (!ctx) {
+    alert("Could not create canvas context for PNG export.");
+    return;
+  }
 
   const img = new Image();
+  img.crossOrigin = "anonymous"; // Attempt to handle potential CORS issues with SVG content
+
   const svgBlob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(svgBlob);
 
   img.onload = () => {
     const padding = 20;
-    // Ensure image has loaded and has dimensions
-    const naturalWidth = img.naturalWidth || img.width;
-    const naturalHeight = img.naturalHeight || img.height;
+    const naturalWidth = img.naturalWidth;
+    const naturalHeight = img.naturalHeight;
 
     if (naturalWidth === 0 || naturalHeight === 0) {
-        console.error("SVG image has zero dimensions, cannot export PNG.");
-        URL.revokeObjectURL(url);
-        return;
+      console.error("SVG image has zero intrinsic dimensions, cannot export PNG.");
+      URL.revokeObjectURL(url);
+      alert("Diagram has no content or dimensions, cannot export as PNG.");
+      return;
     }
 
     canvas.width = naturalWidth + padding * 2;
     canvas.height = naturalHeight + padding * 2;
 
-    ctx.fillStyle = 'hsl(var(--background))';
+    // Set canvas background to match the application's background
+    try {
+        ctx.fillStyle = window.getComputedStyle(document.body).backgroundColor || 'white';
+    } catch (e) {
+        ctx.fillStyle = 'white'; // Fallback if computed style fails (e.g. in tests)
+    }
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.drawImage(img, padding, padding);
-    URL.revokeObjectURL(url);
+    // Draw the SVG image onto the canvas
+    ctx.drawImage(img, padding, padding, naturalWidth, naturalHeight);
+    URL.revokeObjectURL(url); // Clean up the object URL once drawn
 
-    const pngUrl = canvas.toDataURL('image/png');
-    const link = document.createElement('a');
-    link.href = pngUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    if (document.body.contains(link)) {
+    try {
+      const pngUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = pngUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      if (document.body.contains(link)) {
         document.body.removeChild(link);
+      }
+    } catch (e) {
+      console.error("Error calling toDataURL (canvas might be tainted):", e);
+      alert("Failed to export PNG. The diagram may contain external content that cannot be included. Please try generating the diagram without external images.");
     }
   };
+
   img.onerror = (e) => {
-    console.error("Error loading SVG for PNG export:", e);
+    console.error("Error loading SVG into Image object for PNG export:", e);
     URL.revokeObjectURL(url);
-  }
+    alert("Failed to load diagram for PNG export. The SVG data might be malformed or an error occurred during loading.");
+  };
+
   img.src = url;
 };
 
 export const exportJSON = (diagramCode: string, filename: string = 'diagram.json') => {
-  const jsonData = JSON.stringify({ diagramCode: stripMarkdownFences(diagramCode) }, null, 2); // Also strip for JSON export
+  const jsonData = JSON.stringify({ diagramCode: stripMarkdownFences(diagramCode) }, null, 2);
   const blob = new Blob([jsonData], { type: 'application/json;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');

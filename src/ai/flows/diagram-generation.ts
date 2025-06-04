@@ -48,9 +48,11 @@ const diagramGenerationPrompt = ai.definePrompt({
   - Use standard Mermaid syntax for node shapes (e.g., \`id[Text]\` for rectangles, \`id(Text)\` for rounded rectangles, \`id((Text))\` for circles, etc., but remember to quote the Text part as per the critical rule above: \`id["Text"]\`, \`id("Text")\`, \`id(("Text"))\`).
   - For links/edges:
     - Use correct arrow syntax: \`A --> B\` (directed), \`A --- B\` (undirected), \`A-- "Link Text" -->B\` (directed with quoted text), \`A-- "Link Text" ---B\` (undirected with quoted text).
+    - Ensure link text is also enclosed in double quotes: \`A-- "My Link Label" -->B\`.
     - Ensure links connect valid node IDs.
     - Do not use incomplete link syntax like 'A -' or 'A --'.
   - Ensure all blocks (like subgraphs, classes, sequence diagram participants) are correctly opened and closed.
+  - **Crucially, do NOT include any external image URLs or links (e.g., \`![alt](http://...)\` or HTML \`<img>\` tags) within the diagram code.** The diagram should be self-contained vector graphics.
 
   **Output Format:**
   - IMPORTANT: Do NOT wrap the diagram code in Markdown code fences (e.g., \`\`\`mermaid ... \`\`\` or \`\`\` ... \`\`\`).
@@ -80,3 +82,4 @@ const diagramGenerationFlow = ai.defineFlow(
     return output!;
   }
 );
+
