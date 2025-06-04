@@ -1,3 +1,4 @@
+
 // diagram-generation.ts
 'use server';
 
@@ -35,7 +36,7 @@ const diagramGenerationPrompt = ai.definePrompt({
   Prompt: {{{prompt}}}
 
   The diagram code should be in Mermaid or Graphviz format.
-  Ensure the code is valid and complete.
+  Ensure the code is valid and complete. Pay close attention to link and arrow syntax. For example, use 'A --> B' for a simple directed link, 'A --- B' for an undirected link, or 'A -- text --- B' for a link with text. Do not use incomplete link syntax like 'A -'.
   IMPORTANT: Do NOT wrap the diagram code in Markdown code fences (e.g., \`\`\`mermaid ... \`\`\` or \`\`\` ... \`\`\`).
   The output should be only the raw diagram code itself, starting directly with the diagram type (e.g., 'graph TD', 'classDiagram').
   `,
@@ -60,3 +61,4 @@ const diagramGenerationFlow = ai.defineFlow(
     return output!;
   }
 );
+
