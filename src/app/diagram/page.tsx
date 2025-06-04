@@ -16,11 +16,11 @@ import type { DiagramGenerationInput } from '@/ai/flows/diagram-generation';
 import { useToast } from '@/hooks/use-toast';
 import { renderMermaidDiagram, exportSVG, exportPNG, exportJSON } from '@/lib/mermaid-utils';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
-import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogClose, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Loader2, Network, XIcon } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle as UiCardTitle } from '@/components/ui/card';
 
 
 const DiagramPage: NextPage = () => {
@@ -66,6 +66,8 @@ const DiagramPage: NextPage = () => {
   useEffect(() => {
     if (isDiagramModalOpen && diagramCode) {
       startTransition(async () => {
+        // Ensure the modal container is definitely in the DOM before rendering
+        await new Promise(resolve => setTimeout(resolve, 0)); 
         await debouncedRenderDiagram(diagramCode, 'mermaid-modal-diagram-container');
       });
     }
@@ -146,10 +148,10 @@ const DiagramPage: NextPage = () => {
               <PromptForm onSubmit={handlePromptSubmit} isLoading={isPending} />
               <Card className="shadow-md">
                 <CardHeader className="py-3 px-4 border-b">
-                  <CardTitle className="text-lg flex items-center text-primary">
+                  <UiCardTitle className="text-lg flex items-center text-primary">
                     <Network className="mr-2 h-5 w-5" />
                     Diagram Type
-                  </CardTitle>
+                  </UiCardTitle>
                 </CardHeader>
                 <CardContent className="p-4">
                   <Select value={diagramType} onValueChange={setDiagramType}>
@@ -180,9 +182,9 @@ const DiagramPage: NextPage = () => {
 
         <ResizablePanelGroup
           direction="horizontal"
-          className="flex-1 min-h-0 rounded-lg border" // Ensure it takes remaining space and can shrink
+          className="flex-1 min-h-0 rounded-lg border" 
         >
-          <ResizablePanel defaultSize={50} minSize={30}> {/* Diagram smaller by default */}
+          <ResizablePanel defaultSize={50} minSize={30}> 
             <DiagramView
               diagramCode={diagramCode}
               isLoading={isPending}
@@ -199,6 +201,7 @@ const DiagramPage: NextPage = () => {
 
       <Dialog open={isDiagramModalOpen} onOpenChange={setIsDiagramModalOpen}>
         <DialogContent className="p-0 m-0 w-[calc(100vw-2rem)] h-[calc(100vh-2rem)] max-w-none max-h-none rounded-lg flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm">
+          <DialogTitle className="sr-only">Fullscreen Diagram View</DialogTitle>
           <DialogClose asChild>
             <Button
               variant="ghost"
@@ -227,7 +230,7 @@ const DiagramPage: NextPage = () => {
 };
 
 function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
-  let timeout: NodeJS.Timeout;
+  let timeout: NodeJS.Timeout | undefined;
   return (...args: Parameters<F>): Promise<ReturnType<F>> =>
     new Promise(resolve => {
       if (timeout) {
@@ -238,3 +241,4 @@ function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
 }
 
 export default DiagramPage;
+
