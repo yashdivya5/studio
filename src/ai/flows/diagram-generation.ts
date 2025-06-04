@@ -35,10 +35,21 @@ const diagramGenerationPrompt = ai.definePrompt({
 
   Prompt: {{{prompt}}}
 
-  The diagram code should be in Mermaid or Graphviz format.
-  Ensure the code is valid and complete. Pay close attention to link and arrow syntax. For example, use 'A --> B' for a simple directed link, 'A --- B' for an undirected link, or 'A -- text --- B' for a link with text. Do not use incomplete link syntax like 'A -'.
+  The diagram code MUST be in **Mermaid format**. Do NOT use Graphviz or other formats.
+  Ensure the code is valid and complete.
+  - Start directly with the diagram type declaration (e.g., 'graph TD', 'classDiagram', 'sequenceDiagram').
+  - For node definitions:
+    - Use standard Mermaid syntax (e.g., \`id[Text]\`, \`id(Text)\`, \`id((Text))\`, etc.).
+    - If node text contains special characters (like \`(\`, \`)\`, \`[\`, \`]\`, \`#\`, \`;\`) or spaces, enclose the text in double quotes: \`id["Text with (special) characters"]\`.
+    - For multi-line text within a node, use \`<br>\` tags for line breaks: \`id["First line<br>Second line"]\`. Do NOT create newlines in the code for multi-line text within a single node definition.
+  - For links:
+    - Use correct arrow syntax: \`A --> B\` (directed), \`A --- B\` (undirected), \`A -- Text --> B\` (directed with text), \`A -- Text --- B\` (undirected with text).
+    - Ensure links connect valid node IDs.
+    - Do not use incomplete link syntax like 'A -' or 'A --'.
+  - Ensure all blocks (like subgraphs, classes, sequence diagram participants) are correctly opened and closed.
+
   IMPORTANT: Do NOT wrap the diagram code in Markdown code fences (e.g., \`\`\`mermaid ... \`\`\` or \`\`\` ... \`\`\`).
-  The output should be only the raw diagram code itself, starting directly with the diagram type (e.g., 'graph TD', 'classDiagram').
+  The output must be only the raw diagram code itself.
   `,
 });
 
