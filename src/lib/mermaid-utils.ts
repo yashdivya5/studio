@@ -1,3 +1,4 @@
+
 // src/lib/mermaid-utils.ts
 import mermaid from 'mermaid';
 
@@ -32,26 +33,32 @@ export const renderMermaidDiagram = async (elementId: string, rawCode: string): 
   const code = stripMarkdownFences(rawCode);
 
   if (!code) {
-    container.innerHTML = '';
-    return undefined; 
+    container.innerHTML = ''; // Clear if no code
+    return undefined;
   }
 
   try {
+    // The first argument is a unique ID for the SVG itself.
     const internalSvgId = `mermaid-svg-${elementId}-${Date.now()}`;
     const { svg, bindFunctions } = await mermaid.render(internalSvgId, code);
 
+    // Place the rendered SVG into our container.
     container.innerHTML = svg;
 
+    // Bind any event handlers if necessary (e.g., for clickable nodes).
     if (bindFunctions) {
       bindFunctions(container);
     }
     return svg;
   } catch (error) {
     console.error('Mermaid rendering error:', error);
+    console.error('Problematic Mermaid code passed to render:', code); // Log the problematic code
     container.innerHTML = `<div class="p-4 text-destructive bg-destructive/10 border border-destructive rounded-md">
         <p class="font-semibold">Error rendering diagram:</p>
         <pre class="mt-2 text-sm whitespace-pre-wrap">${(error as Error).message || 'Unknown error'}</pre>
         <p class="mt-2 text-xs">Please check your diagram code for syntax errors. Ensure it does not include Markdown fences like \`\`\`mermaid.\`\`\`</p>
+        <p class="mt-2 text-xs font-semibold">Code submitted to Mermaid:</p>
+        <pre class="mt-1 text-xs whitespace-pre-wrap bg-muted/50 p-2 rounded-sm overflow-auto max-h-40">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
       </div>`;
     return undefined;
   }
@@ -65,7 +72,7 @@ export const exportSVG = (svgContent: string, filename: string = 'diagram.svg') 
   link.download = filename;
   document.body.appendChild(link);
   link.click();
-  if (document.body.contains(link)) { 
+  if (document.body.contains(link)) {
     document.body.removeChild(link);
   }
   URL.revokeObjectURL(url);
@@ -82,12 +89,22 @@ export const exportPNG = (svgContent: string, filename: string = 'diagram.png') 
 
   img.onload = () => {
     const padding = 20;
-    canvas.width = img.width + padding * 2;
-    canvas.height = img.height + padding * 2;
+    // Ensure image has loaded and has dimensions
+    const naturalWidth = img.naturalWidth || img.width;
+    const naturalHeight = img.naturalHeight || img.height;
 
-    ctx.fillStyle = 'hsl(var(--background))'; 
+    if (naturalWidth === 0 || naturalHeight === 0) {
+        console.error("SVG image has zero dimensions, cannot export PNG.");
+        URL.revokeObjectURL(url);
+        return;
+    }
+
+    canvas.width = naturalWidth + padding * 2;
+    canvas.height = naturalHeight + padding * 2;
+
+    ctx.fillStyle = 'hsl(var(--background))';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
+
     ctx.drawImage(img, padding, padding);
     URL.revokeObjectURL(url);
 
@@ -97,7 +114,7 @@ export const exportPNG = (svgContent: string, filename: string = 'diagram.png') 
     link.download = filename;
     document.body.appendChild(link);
     link.click();
-    if (document.body.contains(link)) { 
+    if (document.body.contains(link)) {
         document.body.removeChild(link);
     }
   };
@@ -117,7 +134,7 @@ export const exportJSON = (diagramCode: string, filename: string = 'diagram.json
   link.download = filename;
   document.body.appendChild(link);
   link.click();
-  if (document.body.contains(link)) { 
+  if (document.body.contains(link)) {
     document.body.removeChild(link);
   }
   URL.revokeObjectURL(url);

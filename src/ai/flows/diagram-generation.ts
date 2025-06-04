@@ -37,19 +37,24 @@ const diagramGenerationPrompt = ai.definePrompt({
 
   The diagram code MUST be in **Mermaid format**. Do NOT use Graphviz or other formats.
   Ensure the code is valid and complete.
+
+  **Critical Rules for Node Text:**
+  - **ALWAYS enclose node text (labels) in double quotes.** For example: \`nodeId["This is my node text with spaces and (parentheses)"]\`, \`task1["Process: Core Concepts (RDDs, DataFrames)"]\`.
+  - This is essential if the text contains spaces, or special characters like \`(\`, \`)\`, \`[\`, \`]\`, \`#\`, \`;\`, \`:\`.
+  - For multi-line text within a node, use \`<br>\` tags for line breaks INSIDE the quotes: \`id["First line<br>Second line"]\`. Do NOT create actual newlines in the code for multi-line text within a single node definition.
+
+  **Other Important Rules:**
   - Start directly with the diagram type declaration (e.g., 'graph TD', 'classDiagram', 'sequenceDiagram').
-  - For node definitions:
-    - Use standard Mermaid syntax (e.g., \`id[Text]\`, \`id(Text)\`, \`id((Text))\`, etc.).
-    - If node text contains special characters (like \`(\`, \`)\`, \`[\`, \`]\`, \`#\`, \`;\`) or spaces, enclose the text in double quotes: \`id["Text with (special) characters"]\`.
-    - For multi-line text within a node, use \`<br>\` tags for line breaks: \`id["First line<br>Second line"]\`. Do NOT create newlines in the code for multi-line text within a single node definition.
-  - For links:
-    - Use correct arrow syntax: \`A --> B\` (directed), \`A --- B\` (undirected), \`A -- Text --> B\` (directed with text), \`A -- Text --- B\` (undirected with text).
+  - Use standard Mermaid syntax for node shapes (e.g., \`id[Text]\` for rectangles, \`id(Text)\` for rounded rectangles, \`id((Text))\` for circles, etc., but remember to quote the Text part as per the critical rule above: \`id["Text"]\`, \`id("Text")\`, \`id(("Text"))\`).
+  - For links/edges:
+    - Use correct arrow syntax: \`A --> B\` (directed), \`A --- B\` (undirected), \`A-- "Link Text" -->B\` (directed with quoted text), \`A-- "Link Text" ---B\` (undirected with quoted text).
     - Ensure links connect valid node IDs.
     - Do not use incomplete link syntax like 'A -' or 'A --'.
   - Ensure all blocks (like subgraphs, classes, sequence diagram participants) are correctly opened and closed.
 
-  IMPORTANT: Do NOT wrap the diagram code in Markdown code fences (e.g., \`\`\`mermaid ... \`\`\` or \`\`\` ... \`\`\`).
-  The output must be only the raw diagram code itself.
+  **Output Format:**
+  - IMPORTANT: Do NOT wrap the diagram code in Markdown code fences (e.g., \`\`\`mermaid ... \`\`\` or \`\`\` ... \`\`\`).
+  - The output must be only the raw diagram code itself, starting with the diagram type.
   `,
 });
 
@@ -67,9 +72,11 @@ const diagramGenerationFlow = ai.defineFlow(
         const match = output.diagramCode.match(fenceRegex);
         if (match && match[1]) {
             output.diagramCode = match[1].trim();
+        } else {
+            // Also trim if no fences were found, just in case of leading/trailing whitespace from AI
+            output.diagramCode = output.diagramCode.trim();
         }
     }
     return output!;
   }
 );
-
