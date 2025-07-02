@@ -39,19 +39,19 @@ const diagramGenerationPrompt = ai.definePrompt({
   Ensure the code is valid and complete.
 
   **Critical Rules for Node Text:**
-  - **ALWAYS enclose node text (labels) in double quotes.** For example: \`nodeId["This is my node text with spaces and (parentheses)"]\`, \`task1["Process: Core Concepts (RDDs, DataFrames)"]\`.
-  - This is essential if the text contains spaces, or special characters like \`(\`, \`)\`, \`[\`, \`]\`, \`#\`, \`;\`, \`:\`.
-  - For multi-line text within a node, use \`<br>\` tags for line breaks INSIDE the quotes: \`id["First line<br>Second line"]\`. Do NOT create actual newlines in the code for multi-line text within a single node definition.
+  - **ALWAYS enclose node text (labels) in double quotes.** This is a strict requirement.
+  - **Correct format:** \`nodeId["This is my node text"]\`
+  - **Incorrect format:** \`nodeId[This is my node text]\`
+  - This rule applies to all node shapes. For example: \`id["Rectangle"]\`, \`id("Rounded")\`, \`id(("Circle"))\`.
+  - For multi-line text, use \`<br>\` tags INSIDE the quotes: \`id["First line<br>Second line"]\`. Do NOT create actual newlines in the code for multi-line text within a single node definition.
 
   **Other Important Rules:**
   - Start directly with the diagram type declaration (e.g., 'graph TD', 'classDiagram', 'sequenceDiagram').
-  - Use standard Mermaid syntax for node shapes (e.g., \`id[Text]\` for rectangles, \`id(Text)\` for rounded rectangles, \`id((Text))\` for circles, etc., but remember to quote the Text part as per the critical rule above: \`id["Text"]\`, \`id("Text")\`, \`id(("Text"))\`).
   - For links/edges:
-    - Use correct arrow syntax: \`A --> B\` (directed), \`A --- B\` (undirected), \`A-- "Link Text" -->B\` (directed with quoted text), \`A-- "Link Text" ---B\` (undirected with quoted text).
-    - Ensure link text is also enclosed in double quotes: \`A-- "My Link Label" -->B\`.
-    - Ensure links connect valid node IDs.
-    - Do not use incomplete link syntax like 'A -' or 'A --'.
-  - Ensure all blocks (like subgraphs, classes, sequence diagram participants) are correctly opened and closed.
+    - Use correct arrow syntax: \`A --> B\` (directed), \`A --- B\` (undirected).
+    - Link text MUST be in double quotes: \`A-- "Link Label" -->B\`.
+    - Ensure links connect valid node IDs and are complete.
+  - Ensure all blocks (like subgraphs) are correctly opened and closed.
   - **Crucially, do NOT include any external image URLs or links (e.g., \`![alt](http://...)\` or HTML \`<img>\` tags) within the diagram code.** The diagram should be self-contained vector graphics.
 
   **Output Format:**
@@ -82,4 +82,3 @@ const diagramGenerationFlow = ai.defineFlow(
     return output!;
   }
 );
-
