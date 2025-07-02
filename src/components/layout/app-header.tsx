@@ -18,22 +18,19 @@ import {
 import { LogOut, UserCircle, Settings, LifeBuoy } from 'lucide-react';
 import FigmaticLogo from '@/components/logo'; // Import the new logo
 
-interface AppHeaderProps {
-  // Props kept for potential future use, though not directly used by the header for these actions now
-  onExportSVG?: () => void;
-  onExportPNG?: () => void;
-  onExportJSON?: () => void;
-  onToggleFullScreen?: () => void;
-  isFullScreen?: boolean;
-}
+interface AppHeaderProps {}
 
 const AppHeader: FC<AppHeaderProps> = () => {
   const { currentUser, logout } = useAuth();
   const router = useRouter();
 
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/login');
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
   };
   
   return (
@@ -50,9 +47,9 @@ const AppHeader: FC<AppHeaderProps> = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-10 w-10 border-2 border-primary hover:border-accent transition-colors">
-                    <AvatarImage src={`https://placehold.co/100x100.png?text=${currentUser.id.substring(0,1).toUpperCase()}`} alt={currentUser.id} data-ai-hint="abstract geometric" />
+                    <AvatarImage src={currentUser.photoURL || `https://placehold.co/100x100.png`} alt={currentUser.displayName || currentUser.email || 'User'} data-ai-hint="abstract geometric" />
                     <AvatarFallback className="bg-primary text-primary-foreground">
-                      {currentUser.id.substring(0, 1).toUpperCase()}
+                      {currentUser.email ? currentUser.email.substring(0, 1).toUpperCase() : 'U'}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -60,9 +57,9 @@ const AppHeader: FC<AppHeaderProps> = () => {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none text-foreground">{currentUser.id}</p>
+                    <p className="text-sm font-medium leading-none text-foreground">{currentUser.displayName || 'Welcome'}</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      Welcome to Figmatic
+                      {currentUser.email}
                     </p>
                   </div>
                 </DropdownMenuLabel>
