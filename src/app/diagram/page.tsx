@@ -18,16 +18,23 @@ import { renderMermaidDiagram, exportSVG, exportPNG, exportJSON } from '@/lib/me
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
 import { Dialog, DialogContent, DialogClose, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Network, XIcon, Bot, User } from 'lucide-react';
+import { Loader2, Network, XIcon, Bot, User, Lightbulb } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import FigmaticLogo from '@/components/logo';
 
 interface Message {
     role: 'user' | 'assistant';
     content: string;
+}
+
+interface Suggestion {
+    suggestedType: string;
+    reason: string;
+    originalPrompt: string;
 }
 
 const DiagramPage: NextPage = () => {
@@ -44,6 +51,7 @@ const DiagramPage: NextPage = () => {
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: "Hello! Describe the diagram you'd like to create, or ask me to modify the current one." }
   ]);
+  const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const diagramTypes = [
@@ -88,7 +96,7 @@ const DiagramPage: NextPage = () => {
     if (chatContainerRef.current) {
         chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, suggestion]);
 
 
   const handleCodeChange = (newCode: string) => {
@@ -99,6 +107,8 @@ const DiagramPage: NextPage = () => {
   };
 
   const handleSendMessage = async (promptText: string) => {
+    if (!promptText.trim()) return;
+    setSuggestion(null); // Clear previous suggestions
     setMessages(prev => [...prev, { role: 'user', content: promptText }]);
     
     startTransition(async () => {
@@ -113,30 +123,59 @@ const DiagramPage: NextPage = () => {
           });
           setDocumentFile(null); // Reset after sending
         }
-
+        
+        const diagramInfo = diagramTypes.find(d => d.value === diagramType);
         const input: DiagramGenerationInput = {
-          prompt: `Using the diagram type '${diagramTypes.find(d => d.value === diagramType)?.label || 'flowchart'}', apply the following instruction: ${promptText}`,
+          prompt: promptText,
+          currentDiagramLabel: diagramInfo?.label || 'Flowchart',
           previousDiagramCode: diagramCode || undefined,
           documentDataUri,
         };
+
         const result = await generateDiagram(input);
+        
         setDiagramCode(result.diagramCode);
         await debouncedRenderDiagram(result.diagramCode);
-        toast({
-          title: 'Diagram Updated!',
-          description: 'Your diagram has been successfully updated.',
-        });
+
+        if (result.suggestedDiagramType && result.suggestionReason && diagramTypes.some(d => d.value === result.suggestedDiagramType)) {
+          setSuggestion({
+            suggestedType: result.suggestedDiagramType,
+            reason: result.suggestionReason,
+            originalPrompt: promptText,
+          });
+        } else {
+          setMessages(prev => [...prev, { role: 'assistant', content: "I've updated the diagram based on your request." }]);
+        }
       } catch (error) {
         console.error('Error generating diagram:', error);
+        const errorMessage = (error as Error).message || 'An unexpected error occurred.';
+        setMessages(prev => [...prev, { role: 'assistant', content: `I'm sorry, I ran into an error. Please try refining your instruction.\n\n**Error:** ${errorMessage}` }]);
         toast({
           variant: 'destructive',
           title: 'Error Generating Diagram',
-          description: (error as Error).message || 'An unexpected error occurred.',
+          description: errorMessage,
         });
-        setMessages(prev => [...prev, { role: 'assistant', content: "I'm sorry, I ran into an error. Please try refining your instruction." }]);
       }
     });
   };
+  
+  const handleAcceptSuggestion = () => {
+    if (!suggestion) return;
+
+    const { suggestedType, originalPrompt } = suggestion;
+    const suggestedLabel = diagramTypes.find(d => d.value === suggestedType)?.label || suggestedType;
+
+    // Update the dropdown
+    setDiagramType(suggestedType);
+    
+    // Add a user message to show the action in chat history
+    setMessages(prev => [...prev, { role: 'user', content: `Okay, let's try it as a '${suggestedLabel}'.` }]);
+
+    // Clear the suggestion and resend
+    setSuggestion(null);
+    handleSendMessage(originalPrompt);
+  };
+
 
   const handleOpenDiagramModal = () => {
     if (diagramCode) setIsDiagramModalOpen(true);
@@ -204,6 +243,33 @@ const DiagramPage: NextPage = () => {
                                         </div>
                                     </div>
                                 )}
+                                {suggestion && (
+                                    <Alert className="mt-2 bg-accent/10 border-accent/50 text-accent-foreground">
+                                        <Lightbulb className="h-5 w-5 text-accent" />
+                                        <AlertTitle className="font-semibold text-accent">Suggestion</AlertTitle>
+                                        <AlertDescription className="text-accent-foreground/90 space-y-2">
+                                            <p>{suggestion.reason}</p>
+                                            <p>A '{diagramTypes.find(d => d.value === suggestion.suggestedType)?.label}' might be a better fit. Would you like to switch?</p>
+                                        </AlertDescription>
+                                        <div className="mt-4 flex gap-2">
+                                            <Button
+                                                size="sm"
+                                                className="bg-accent text-accent-foreground hover:bg-accent/90"
+                                                onClick={handleAcceptSuggestion}
+                                            >
+                                                Switch & Regenerate
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="border-accent text-accent hover:bg-accent/20 hover:text-accent"
+                                                onClick={() => setSuggestion(null)}
+                                            >
+                                                Dismiss
+                                            </Button>
+                                        </div>
+                                    </Alert>
+                                )}
                             </div>
                         </ScrollArea>
                     </CardContent>
@@ -219,7 +285,7 @@ const DiagramPage: NextPage = () => {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 space-y-4">
-                        <Select value={diagramType} onValueChange={setDiagramType}>
+                        <Select value={diagramType} onValueChange={setDiagramType} disabled={isPending}>
                             <SelectTrigger id="diagram-type-select" className="w-full bg-input focus-visible:ring-accent">
                                 <SelectValue placeholder="Select diagram type..." />
                             </SelectTrigger>
