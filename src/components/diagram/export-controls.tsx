@@ -1,3 +1,4 @@
+
 // src/components/diagram/export-controls.tsx
 "use client";
 
@@ -10,7 +11,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Card, CardContent } from '@/components/ui/card';
 
 interface ExportControlsProps {
   onExportSVG: () => void;
@@ -26,11 +26,9 @@ const ExportControls: FC<ExportControlsProps> = ({
   canExport
 }) => {
   return (
-    <Card className="shadow-md">
-      <CardContent className="p-3 flex flex-col sm:flex-row items-center gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" disabled={!canExport} className="w-full sm:w-auto border-accent text-accent hover:bg-accent/10 hover:text-accent flex-grow">
+            <Button variant="outline" disabled={!canExport} className="w-full border-accent text-accent hover:bg-accent/10 hover:text-accent flex-grow">
               <Download className="mr-2 h-4 w-4" /> Export Diagram
             </Button>
           </DropdownMenuTrigger>
@@ -49,8 +47,6 @@ const ExportControls: FC<ExportControlsProps> = ({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </CardContent>
-    </Card>
   );
 };
 
