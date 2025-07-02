@@ -9,7 +9,6 @@ interface AuthContextType {
   currentUser: User | null;
   login: (email: string, pass: string) => Promise<void>;
   signup: (email: string, pass: string) => Promise<void>;
-  googleLogin: () => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
 }
