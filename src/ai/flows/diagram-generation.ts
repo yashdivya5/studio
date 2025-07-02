@@ -3,7 +3,7 @@
 'use server';
 
 /**
- * @fileOverview Diagram generation from a text prompt.
+ * @fileOverview Diagram generation from a text prompt and an optional document.
  *
  * - generateDiagram - A function that takes a text prompt and returns a diagram code.
  * - DiagramGenerationInput - The input type for the generateDiagram function.
@@ -15,6 +15,7 @@ import {z} from 'genkit';
 
 const DiagramGenerationInputSchema = z.object({
   prompt: z.string().describe('A text prompt describing the diagram to generate.'),
+  documentDataUri: z.string().optional().describe("An optional document (e.g., PDF, TXT) as a data URI. If provided, it's the primary source for diagram content."),
 });
 export type DiagramGenerationInput = z.infer<typeof DiagramGenerationInputSchema>;
 
@@ -31,9 +32,16 @@ const diagramGenerationPrompt = ai.definePrompt({
   name: 'diagramGenerationPrompt',
   input: {schema: DiagramGenerationInputSchema},
   output: {schema: DiagramGenerationOutputSchema},
-  prompt: `You are a diagram generation expert. You will generate diagram code based on the user's prompt.
+  prompt: `You are a diagram generation expert. You will generate diagram code based on the user's prompt and an optional document.
 
   Prompt: {{{prompt}}}
+
+  {{#if documentDataUri}}
+  The user has uploaded a document. Your primary task is to analyze this document and generate a diagram that represents its content. Use the text prompt above for additional instructions or to clarify the type of diagram required.
+
+  Document Content:
+  {{media url=documentDataUri}}
+  {{/if}}
 
   The diagram code MUST be in **Mermaid format**. Do NOT use Graphviz or other formats.
   Ensure the code is valid and complete.

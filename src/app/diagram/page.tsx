@@ -18,9 +18,11 @@ import { renderMermaidDiagram, exportSVG, exportPNG, exportJSON } from '@/lib/me
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
 import { Dialog, DialogContent, DialogClose, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Network, XIcon } from 'lucide-react';
+import { Loader2, Network, XIcon, Paperclip, FileUp, XCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle as UiCardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 
 const DiagramPage: NextPage = () => {
@@ -33,6 +35,7 @@ const DiagramPage: NextPage = () => {
   const [currentSvgContent, setCurrentSvgContent] = useState<string>('');
   const [diagramType, setDiagramType] = useState<string>('flowchart');
   const [isDiagramModalOpen, setIsDiagramModalOpen] = useState<boolean>(false);
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
 
   const diagramTypes = [
     { value: 'flowchart', label: 'Flowchart' },
@@ -80,17 +83,48 @@ const DiagramPage: NextPage = () => {
     });
   };
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast({
+          variant: 'destructive',
+          title: 'File too large',
+          description: 'Please upload a file smaller than 5MB.',
+        });
+        setDocumentFile(null);
+        event.target.value = ''; // Reset file input
+      } else {
+        setDocumentFile(file);
+      }
+    }
+  };
+
   const handlePromptSubmit = async (promptText: string) => {
     startTransition(async () => {
       try {
-        const fullPrompt = `Create a ${diagramTypes.find(d => d.value === diagramType)?.label || 'diagram'} for: ${promptText}. Ensure the output is only the raw diagram code itself, starting directly with the diagram type (e.g., 'graph TD', 'classDiagram'), and does not include any markdown fences like \`\`\`mermaid or \`\`\`.`;
-        const input: DiagramGenerationInput = { prompt: fullPrompt };
+        let documentDataUri: string | undefined = undefined;
+        if (documentFile) {
+          documentDataUri = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(documentFile);
+          });
+        }
+
+        const fullPrompt = `Create a ${diagramTypes.find(d => d.value === diagramType)?.label || 'diagram'} for: ${promptText}. If a document is uploaded, base the diagram primarily on the document's content, using the text prompt for additional instructions.`;
+
+        const input: DiagramGenerationInput = {
+          prompt: fullPrompt,
+          documentDataUri,
+        };
         const result = await generateDiagram(input);
         setDiagramCode(result.diagramCode);
         await debouncedRenderDiagram(result.diagramCode);
         toast({
           title: 'Diagram Generated!',
-          description: 'Your diagram has been successfully created from the prompt.',
+          description: 'Your diagram has been successfully created.',
         });
       } catch (error) {
         console.error('Error generating diagram:', error);
@@ -146,6 +180,56 @@ const DiagramPage: NextPage = () => {
           <div className="flex flex-col lg:flex-row items-start gap-2 flex-shrink-0">
             <div className="flex flex-col gap-2 w-full lg:flex-grow-[2] lg:basis-0">
               <PromptForm onSubmit={handlePromptSubmit} isLoading={isPending} />
+              
+              <Card className="shadow-md">
+                <CardHeader className="py-3 px-4 border-b">
+                  <UiCardTitle className="text-lg flex items-center text-primary">
+                    <Paperclip className="mr-2 h-5 w-5" />
+                    Upload Document (Optional)
+                  </UiCardTitle>
+                </CardHeader>
+                <CardContent className="p-4 space-y-3">
+                  {!documentFile ? (
+                    <div className="relative">
+                      <Input
+                        id="file-upload"
+                        type="file"
+                        className="sr-only"
+                        onChange={handleFileChange}
+                        accept=".pdf,.txt,.md,.json,.doc,.docx" // Common document types
+                        disabled={isPending}
+                      />
+                      <Label
+                        htmlFor="file-upload"
+                        className="flex items-center justify-center w-full h-20 border-2 border-dashed rounded-md cursor-pointer hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex flex-col items-center">
+                          <FileUp className="h-8 w-8 text-muted-foreground" />
+                          <span className="mt-1 text-sm text-muted-foreground">Click to upload a file</span>
+                          <span className="text-xs text-muted-foreground">(Max 5MB)</span>
+                        </div>
+                      </Label>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between p-2.5 bg-muted rounded-md text-sm">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <Paperclip className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate text-foreground">{documentFile.name}</span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 rounded-full"
+                        onClick={() => setDocumentFile(null)}
+                        aria-label="Remove file"
+                      >
+                        <XCircle className="h-5 w-5 text-muted-foreground hover:text-foreground" />
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               <Card className="shadow-md">
                 <CardHeader className="py-3 px-4 border-b">
                   <UiCardTitle className="text-lg flex items-center text-primary">
@@ -241,4 +325,3 @@ function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
 }
 
 export default DiagramPage;
-

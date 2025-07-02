@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      bodySizeLimit: '2mb', // Or a reasonable limit for diagram code
+      bodySizeLimit: '5mb', // Increased for document uploads
     },
   },
 };
