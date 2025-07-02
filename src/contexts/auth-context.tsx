@@ -3,15 +3,15 @@
 
 import type { ReactNode } from 'react';
 import React, { createContext, useState, useEffect } from 'react';
-import {
-  User,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-} from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
+
+// Replace Firebase User type with a simple interface for our mock user
+interface User {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+}
 
 interface AuthContextType {
   currentUser: User | null;
@@ -27,35 +27,68 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// Simple in-memory flag to simulate a logged-in user session
+let isAuthenticated = false;
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-      setIsLoading(false);
-      if (user) {
-        router.replace('/diagram');
+    // Simulate checking auth state on initial load
+    setTimeout(() => {
+      // In a real app with localStorage, you'd check a token here.
+      // For this mock, we just start logged out unless a session was started.
+      if (typeof window !== 'undefined') {
+        const sessionEmail = sessionStorage.getItem('mockUserEmail');
+        if (sessionEmail) {
+          isAuthenticated = true;
+          setCurrentUser({
+            uid: 'mock-user-123',
+            email: sessionEmail,
+            displayName: sessionEmail.split('@')[0],
+            photoURL: null
+          });
+          router.replace('/diagram');
+        }
       }
-    });
-
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
+      setIsLoading(false);
+    }, 500);
   }, [router]);
 
   const login = async (email: string, pass: string) => {
-    await signInWithEmailAndPassword(auth, email, pass);
+    setIsLoading(true);
+    // Any email/password is valid in this mock.
+    const user: User = {
+      uid: 'mock-user-123',
+      email: email,
+      displayName: email.split('@')[0],
+      photoURL: null,
+    };
+    isAuthenticated = true;
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('mockUserEmail', email); // Persist email across refresh
+    }
+    setCurrentUser(user);
+    setIsLoading(false);
+    router.replace('/diagram');
   };
 
   const signup = async (email: string, pass: string) => {
-    await createUserWithEmailAndPassword(auth, email, pass);
+    // Signup and login have the same effect in this mock implementation.
+    await login(email, pass);
   };
   
   const logout = async () => {
-    await signOut(auth);
-    // No need to push, onAuthStateChanged will handle redirect
+    setIsLoading(true);
+    isAuthenticated = false;
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('mockUserEmail');
+    }
+    setCurrentUser(null);
+    setIsLoading(false);
+    router.replace('/login');
   };
 
   return (

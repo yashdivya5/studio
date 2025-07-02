@@ -2,8 +2,16 @@
 "use client";
 
 import { useContext } from 'react';
-import type { User } from 'firebase/auth';
 import { AuthContext } from '@/contexts/auth-context';
+
+// This User type must match the one in AuthContext.
+// It's simplified here to avoid depending on Firebase.
+interface User {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+}
 
 interface AuthContextType {
   currentUser: User | null;

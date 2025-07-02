@@ -34,24 +34,10 @@ const LoginForm: FC = () => {
             } else {
                 await signup(email, password);
             }
-            // No navigation needed here, context handles it
+            // Navigation is handled by the auth context
         } catch (error: any) {
-            let description = 'An unexpected error occurred.';
-            switch (error.code) {
-                case 'auth/user-not-found':
-                case 'auth/wrong-password':
-                    description = 'Invalid email or password. Please try again.';
-                    break;
-                case 'auth/email-already-in-use':
-                    description = 'This email is already registered. Please login or use a different email.';
-                    break;
-                case 'auth/weak-password':
-                    description = 'The password is too weak. It should be at least 6 characters long.';
-                    break;
-                default:
-                    description = error.message;
-            }
-            toast({ variant: 'destructive', title: 'Authentication Failed', description });
+            // Since this is a mock, we shouldn't get errors, but this is good practice
+            toast({ variant: 'destructive', title: 'Action Failed', description: 'An unexpected error occurred.' });
         } finally {
             setIsLoading(false);
         }
