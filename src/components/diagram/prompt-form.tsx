@@ -59,7 +59,7 @@ const PromptForm: FC<PromptFormProps> = ({ onSubmit, isLoading, documentFile, se
           <Textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="e.g., A flowchart for user login process with success and failure paths. Or, upload a document below."
+            placeholder="e.g., A flowchart for user login process. Or, upload a document or image below."
             rows={3}
             className="resize-none bg-input focus-visible:ring-accent"
             disabled={isLoading}
@@ -92,7 +92,7 @@ const PromptForm: FC<PromptFormProps> = ({ onSubmit, isLoading, documentFile, se
                     type="file"
                     className="sr-only"
                     onChange={handleFileChange}
-                    accept=".pdf,.txt,.md,.json,.doc,.docx"
+                    accept=".pdf,.txt,.md,.json,.doc,.docx,.png,.jpg,.jpeg,.webp"
                     disabled={isLoading}
                 />
                 <Label

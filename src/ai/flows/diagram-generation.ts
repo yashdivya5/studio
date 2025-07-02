@@ -15,7 +15,7 @@ import {z} from 'genkit';
 
 const DiagramGenerationInputSchema = z.object({
   prompt: z.string().describe('A text prompt describing the diagram to generate.'),
-  documentDataUri: z.string().optional().describe("An optional document (e.g., PDF, TXT) as a data URI. If provided, it's the primary source for diagram content."),
+  documentDataUri: z.string().optional().describe("An optional document or image (e.g., PDF, TXT, PNG) as a data URI. If provided, it's the primary source for diagram content."),
 });
 export type DiagramGenerationInput = z.infer<typeof DiagramGenerationInputSchema>;
 
@@ -32,14 +32,18 @@ const diagramGenerationPrompt = ai.definePrompt({
   name: 'diagramGenerationPrompt',
   input: {schema: DiagramGenerationInputSchema},
   output: {schema: DiagramGenerationOutputSchema},
-  prompt: `You are a diagram generation expert. You will generate diagram code based on the user's prompt and an optional document.
+  prompt: `You are a diagram generation expert. You will generate diagram code based on the user's prompt and an optional document or image.
 
   Prompt: {{{prompt}}}
 
   {{#if documentDataUri}}
-  The user has uploaded a document. Your primary task is to analyze this document and generate a diagram that represents its content. Use the text prompt above for additional instructions or to clarify the type of diagram required.
+  The user has uploaded a file (document or image). Your primary task is to analyze this file and generate a diagram that represents its content.
+  - If the file is a document (like a PDF or text file), read its content.
+  - If the file is an image, analyze the visual information within the image.
 
-  Document Content:
+  Use the text prompt above for additional instructions or to clarify the type of diagram required (e.g., "create a flowchart from this image").
+
+  Uploaded File Content:
   {{media url=documentDataUri}}
   {{/if}}
 
