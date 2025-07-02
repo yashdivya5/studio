@@ -106,10 +106,14 @@ const DiagramPage: NextPage = () => {
     });
   };
 
-  const handleSendMessage = async (promptText: string) => {
+  const handleSendMessage = async (promptText: string, newDiagramType?: string) => {
     if (!promptText.trim()) return;
     setSuggestion(null); // Clear previous suggestions
-    setMessages(prev => [...prev, { role: 'user', content: promptText }]);
+    
+    // Only add a user message if it's not an auto-triggered regeneration
+    if (!newDiagramType) {
+        setMessages(prev => [...prev, { role: 'user', content: promptText }]);
+    }
     
     startTransition(async () => {
       try {
@@ -124,7 +128,8 @@ const DiagramPage: NextPage = () => {
           setDocumentFile(null); // Reset after sending
         }
         
-        const diagramInfo = diagramTypes.find(d => d.value === diagramType);
+        const typeToUse = newDiagramType || diagramType;
+        const diagramInfo = diagramTypes.find(d => d.value === typeToUse);
         const input: DiagramGenerationInput = {
           prompt: promptText,
           currentDiagramLabel: diagramInfo?.label || 'Flowchart',
@@ -136,6 +141,12 @@ const DiagramPage: NextPage = () => {
         
         setDiagramCode(result.diagramCode);
         await debouncedRenderDiagram(result.diagramCode);
+
+        // If we just accepted a suggestion, we shouldn't show a new one
+        if (newDiagramType) {
+            setMessages(prev => [...prev, { role: 'assistant', content: "I've regenerated the diagram with the new type." }]);
+            return;
+        }
 
         if (result.suggestedDiagramType && result.suggestionReason && diagramTypes.some(d => d.value === result.suggestedDiagramType)) {
           setSuggestion({
@@ -165,15 +176,15 @@ const DiagramPage: NextPage = () => {
     const { suggestedType, originalPrompt } = suggestion;
     const suggestedLabel = diagramTypes.find(d => d.value === suggestedType)?.label || suggestedType;
 
-    // Update the dropdown
+    // Update the dropdown state
     setDiagramType(suggestedType);
     
     // Add a user message to show the action in chat history
     setMessages(prev => [...prev, { role: 'user', content: `Okay, let's try it as a '${suggestedLabel}'.` }]);
 
-    // Clear the suggestion and resend
+    // Clear the suggestion and resend with the new type
     setSuggestion(null);
-    handleSendMessage(originalPrompt);
+    handleSendMessage(originalPrompt, suggestedType);
   };
 
 
@@ -247,7 +258,7 @@ const DiagramPage: NextPage = () => {
                                     <Alert className="mt-2 bg-accent/10 border-accent/50 text-accent-foreground">
                                         <Lightbulb className="h-5 w-5 text-accent" />
                                         <AlertTitle className="font-semibold text-accent">Suggestion</AlertTitle>
-                                        <AlertDescription className="text-accent-foreground/90 space-y-2">
+                                        <AlertDescription className="text-foreground/90 space-y-2">
                                             <p>{suggestion.reason}</p>
                                             <p>A '{diagramTypes.find(d => d.value === suggestion.suggestedType)?.label}' might be a better fit. Would you like to switch?</p>
                                         </AlertDescription>
