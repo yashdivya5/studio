@@ -119,7 +119,7 @@ const DiagramView: FC<DiagramViewProps> = ({
         <div
           ref={diagramContainerRef}
           id={diagramContainerId}
-          className={`min-h-[200px] w-full flex-grow flex items-center justify-center p-2 ${!diagramCode || isLoading ? 'hidden' : ''}`}
+          className={`min-h-[200px] w-full flex-grow flex items-start justify-center p-4 ${!diagramCode || isLoading ? 'hidden' : ''}`}
         />
       </CardContent>
     </Card>

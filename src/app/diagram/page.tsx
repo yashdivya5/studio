@@ -336,21 +336,21 @@ const DiagramPage: NextPage = () => {
       </main>
 
       <Dialog open={isDiagramModalOpen} onOpenChange={setIsDiagramModalOpen}>
-        <DialogContent className="p-0 m-0 w-[calc(100vw-2rem)] h-[calc(100vh-2rem)] max-w-none max-h-none rounded-lg flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm">
+        <DialogContent className="p-0 m-0 w-[calc(100vw-2rem)] h-[calc(100vh-2rem)] max-w-none max-h-none rounded-lg flex flex-col bg-background/90 backdrop-blur-sm">
           <DialogTitle className="sr-only">Fullscreen Diagram View</DialogTitle>
           <DialogClose asChild>
             <Button variant="ghost" size="icon" className="absolute top-3 left-3 z-50 text-foreground hover:bg-muted/50" aria-label="Close fullscreen diagram">
               <XIcon className="h-6 w-6" />
             </Button>
           </DialogClose>
-          <div className="w-full h-full p-8 overflow-auto flex items-center justify-center">
+          <div className="w-full h-full p-8 overflow-auto flex items-start justify-center">
             {isPending && isDiagramModalOpen && (
                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-card/80 backdrop-blur-sm z-10">
                     <Loader2 className="h-12 w-12 animate-spin text-primary" />
                     <p className="mt-3 text-lg text-foreground">Loading Diagram...</p>
                 </div>
             )}
-            <div id="mermaid-modal-diagram-container" className="min-w-full min-h-full flex items-center justify-center" />
+            <div id="mermaid-modal-diagram-container" className="min-w-full min-h-full flex items-start justify-center" />
           </div>
         </DialogContent>
       </Dialog>
