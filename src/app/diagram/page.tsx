@@ -18,12 +18,13 @@ import { renderMermaidDiagram, exportSVG, exportPNG, exportJSON } from '@/lib/me
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
 import { Dialog, DialogContent, DialogClose, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Network, XIcon, Bot, User, Lightbulb } from 'lucide-react';
+import { Loader2, Network, XIcon, Bot, User, Lightbulb, Code } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import FigmaticLogo from '@/components/logo';
 
 interface Message {
@@ -52,6 +53,7 @@ const DiagramPage: NextPage = () => {
     { role: 'assistant', content: "Hello! Describe the diagram you'd like to create, or ask me to modify the current one." }
   ]);
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
+  const [isCodeVisible, setIsCodeVisible] = useState<boolean>(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const diagramTypes = [
@@ -311,16 +313,23 @@ const DiagramPage: NextPage = () => {
 
           <ResizableHandle withHandle />
 
-          <ResizablePanel defaultSize={65} minSize={30}>
-            <ResizablePanelGroup direction="vertical" className="h-full">
-              <ResizablePanel defaultSize={65} minSize={20}>
-                <DiagramView diagramCode={diagramCode} isLoading={isPending} onViewFullScreen={handleOpenDiagramModal} className="h-full" />
-              </ResizablePanel>
-              <ResizableHandle withHandle />
-              <ResizablePanel defaultSize={35} minSize={15}>
-                <CodeView diagramCode={diagramCode} onCodeChange={handleCodeChange} isLoading={isPending} className="h-full" />
-              </ResizablePanel>
-            </ResizablePanelGroup>
+          <ResizablePanel defaultSize={65} minSize={30} className="flex flex-col p-2 gap-2">
+              <DiagramView
+                diagramCode={diagramCode}
+                isLoading={isPending}
+                onViewFullScreen={handleOpenDiagramModal}
+                isCodeVisible={isCodeVisible}
+                onToggleCodeVisibility={() => setIsCodeVisible(v => !v)}
+                className="flex-grow"
+              />
+              {isCodeVisible && (
+                  <CodeView
+                    diagramCode={diagramCode}
+                    onCodeChange={handleCodeChange}
+                    isLoading={isPending}
+                    className="flex-shrink-0 h-1/3 min-h-[200px]"
+                  />
+              )}
           </ResizablePanel>
 
         </ResizablePanelGroup>
@@ -359,3 +368,5 @@ function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
 }
 
 export default DiagramPage;
+
+    

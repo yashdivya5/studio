@@ -5,7 +5,7 @@
 import type { FC } from 'react';
 import React, { useEffect, useRef } from 'react';
 import { renderMermaidDiagram } from '@/lib/mermaid-utils';
-import { Loader2, Image as ImageIcon, Maximize } from 'lucide-react';
+import { Loader2, Image as ImageIcon, Maximize, Code, Code2Icon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -14,10 +14,19 @@ interface DiagramViewProps {
   diagramCode: string;
   isLoading: boolean;
   onViewFullScreen: () => void;
+  isCodeVisible: boolean;
+  onToggleCodeVisibility: () => void;
   className?: string;
 }
 
-const DiagramView: FC<DiagramViewProps> = ({ diagramCode, isLoading, onViewFullScreen, className = "" }) => {
+const DiagramView: FC<DiagramViewProps> = ({ 
+  diagramCode, 
+  isLoading, 
+  onViewFullScreen, 
+  isCodeVisible, 
+  onToggleCodeVisibility, 
+  className = "" 
+}) => {
   const diagramContainerId = 'mermaid-diagram-container'; // Main view container ID
   const diagramContainerRef = useRef<HTMLDivElement>(null);
   const prevCodeRef = useRef<string | undefined>();
@@ -66,17 +75,30 @@ const DiagramView: FC<DiagramViewProps> = ({ diagramCode, isLoading, onViewFullS
           <ImageIcon className="mr-2 h-5 w-5" />
           Diagram Preview
         </CardTitle>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleViewFullScreen}
-          disabled={isLoading || !diagramCode}
-          className="ml-auto px-3 border-primary text-primary hover:bg-primary/10 hover:text-primary"
-          aria-label="View diagram fullscreen"
-        >
-          <Maximize className="mr-2 h-4 w-4" />
-          Fullscreen
-        </Button>
+        <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onToggleCodeVisibility}
+              disabled={isLoading}
+              className="ml-auto px-3 border-primary text-primary hover:bg-primary/10 hover:text-primary"
+              aria-label="Toggle code editor visibility"
+            >
+              <Code2Icon className="mr-2 h-4 w-4" />
+              {isCodeVisible ? 'Hide Code' : 'Show Code'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleViewFullScreen}
+              disabled={isLoading || !diagramCode}
+              className="ml-auto px-3 border-primary text-primary hover:bg-primary/10 hover:text-primary"
+              aria-label="View diagram fullscreen"
+            >
+              <Maximize className="mr-2 h-4 w-4" />
+              Fullscreen
+            </Button>
+        </div>
       </CardHeader>
       <CardContent className="p-0 flex-grow flex flex-col relative overflow-auto"> {/* Added overflow-auto here */}
         {isLoading && (
@@ -106,3 +128,5 @@ const DiagramView: FC<DiagramViewProps> = ({ diagramCode, isLoading, onViewFullS
 };
 
 export default DiagramView;
+
+    
