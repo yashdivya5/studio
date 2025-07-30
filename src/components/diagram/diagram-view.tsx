@@ -1,11 +1,10 @@
-
 // src/components/diagram/diagram-view.tsx
 "use client";
 
 import type { FC } from 'react';
 import React, { useEffect, useRef } from 'react';
 import { renderMermaidDiagram } from '@/lib/mermaid-utils';
-import { Loader2, Image as ImageIcon, Maximize, Code, Code2Icon } from 'lucide-react';
+import { Loader2, Image as ImageIcon, Maximize, Code2Icon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -100,7 +99,7 @@ const DiagramView: FC<DiagramViewProps> = ({
             </Button>
         </div>
       </CardHeader>
-      <CardContent className="p-0 flex-grow flex flex-col relative overflow-auto"> {/* Added overflow-auto here */}
+      <CardContent className="p-0 flex-grow flex flex-col relative overflow-auto">
         {isLoading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-card/80 backdrop-blur-sm z-10">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -128,5 +127,3 @@ const DiagramView: FC<DiagramViewProps> = ({
 };
 
 export default DiagramView;
-
-    
