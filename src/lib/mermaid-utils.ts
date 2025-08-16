@@ -111,11 +111,11 @@ export const exportPNG = (svgContent: string, filename: string = 'diagram.png') 
   const updatedSvgString = new XMLSerializer().serializeToString(svgElement);
 
   const img = new Image();
-  // This is the key fix: it allows loading cross-origin images without tainting the canvas
-  img.crossOrigin = 'anonymous';
 
-  const svgBlob = new Blob([updatedSvgString], { type: 'image/svg+xml;charset=utf-8' });
-  const url = URL.createObjectURL(svgBlob);
+  // FIX: Convert the SVG string to a Base64 data URI to prevent tainting the canvas.
+  // This is a more robust way to handle potential cross-origin issues with fonts or other assets.
+  const svgDataUri = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(updatedSvgString)));
+
 
   img.onload = () => {
     const padding = 20;
@@ -123,7 +123,6 @@ export const exportPNG = (svgContent: string, filename: string = 'diagram.png') 
 
     if (width === 0 || height === 0) {
       console.error("SVG image has zero intrinsic dimensions, cannot export PNG.");
-      URL.revokeObjectURL(url);
       alert("Diagram has no content or dimensions, cannot export as PNG.");
       return;
     }
@@ -139,7 +138,6 @@ export const exportPNG = (svgContent: string, filename: string = 'diagram.png') 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.drawImage(img, padding, padding, width, height);
-    URL.revokeObjectURL(url);
 
     try {
       const pngUrl = canvas.toDataURL('image/png');
@@ -159,11 +157,10 @@ export const exportPNG = (svgContent: string, filename: string = 'diagram.png') 
 
   img.onerror = (e) => {
     console.error("Error loading SVG into Image object for PNG export:", e);
-    URL.revokeObjectURL(url);
     alert("Failed to load diagram for PNG export. The SVG data might be malformed or contain inaccessible remote content.");
   };
 
-  img.src = url;
+  img.src = svgDataUri;
 };
 
 
