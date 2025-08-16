@@ -81,12 +81,10 @@ export const exportPNG = (svgContent: string, filename: string = 'diagram.png') 
     return;
   }
   
-  // Create a DOM parser to handle the SVG string
   const parser = new DOMParser();
   const svgDoc = parser.parseFromString(svgContent, "image/svg+xml");
   const svgElement = svgDoc.documentElement as unknown as SVGGraphicsElement;
 
-  // Mermaid often includes a <style> tag. We need to inline these styles for the canvas to render them.
   const styleElement = svgElement.querySelector('style');
   if (styleElement && styleElement.sheet) {
     try {
@@ -104,17 +102,18 @@ export const exportPNG = (svgContent: string, filename: string = 'diagram.png') 
           });
         }
       }
-      // Remove the style tag after inlining
       styleElement.remove();
     } catch(e) {
         console.error("Could not parse stylesheet for PNG export:", e);
-        // We can still try to render, it might work for simple diagrams
     }
   }
   
   const updatedSvgString = new XMLSerializer().serializeToString(svgElement);
 
   const img = new Image();
+  // This is the key fix: it allows loading cross-origin images without tainting the canvas
+  img.crossOrigin = 'anonymous';
+
   const svgBlob = new Blob([updatedSvgString], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(svgBlob);
 
@@ -132,15 +131,13 @@ export const exportPNG = (svgContent: string, filename: string = 'diagram.png') 
     canvas.width = width + padding * 2;
     canvas.height = height + padding * 2;
     
-    // Set canvas background to match the application's background
     try {
         ctx.fillStyle = window.getComputedStyle(document.body).backgroundColor || 'white';
     } catch (e) {
-        ctx.fillStyle = 'white'; // Fallback
+        ctx.fillStyle = 'white';
     }
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw the SVG image onto the canvas
     ctx.drawImage(img, padding, padding, width, height);
     URL.revokeObjectURL(url);
 
@@ -163,7 +160,7 @@ export const exportPNG = (svgContent: string, filename: string = 'diagram.png') 
   img.onerror = (e) => {
     console.error("Error loading SVG into Image object for PNG export:", e);
     URL.revokeObjectURL(url);
-    alert("Failed to load diagram for PNG export. The SVG data might be malformed.");
+    alert("Failed to load diagram for PNG export. The SVG data might be malformed or contain inaccessible remote content.");
   };
 
   img.src = url;
