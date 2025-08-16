@@ -80,39 +80,69 @@ export const exportPNG = (svgContent: string, filename: string = 'diagram.png') 
     alert("Could not create canvas context for PNG export.");
     return;
   }
+  
+  // Create a DOM parser to handle the SVG string
+  const parser = new DOMParser();
+  const svgDoc = parser.parseFromString(svgContent, "image/svg+xml");
+  const svgElement = svgDoc.documentElement as unknown as SVGGraphicsElement;
+
+  // Mermaid often includes a <style> tag. We need to inline these styles for the canvas to render them.
+  const styleElement = svgElement.querySelector('style');
+  if (styleElement && styleElement.sheet) {
+    try {
+      const sheet = styleElement.sheet as CSSStyleSheet;
+      for (const rule of Array.from(sheet.cssRules)) {
+        if (rule instanceof CSSStyleRule) {
+          const { selectorText, style: styleDeclaration } = rule;
+          const elements = svgElement.querySelectorAll(selectorText);
+          elements.forEach(el => {
+            for (let i = 0; i < styleDeclaration.length; i++) {
+              const prop = styleDeclaration[i];
+              const value = styleDeclaration.getPropertyValue(prop);
+              (el as HTMLElement).style.setProperty(prop, value);
+            }
+          });
+        }
+      }
+      // Remove the style tag after inlining
+      styleElement.remove();
+    } catch(e) {
+        console.error("Could not parse stylesheet for PNG export:", e);
+        // We can still try to render, it might work for simple diagrams
+    }
+  }
+  
+  const updatedSvgString = new XMLSerializer().serializeToString(svgElement);
 
   const img = new Image();
-  img.crossOrigin = "anonymous"; // Attempt to handle potential CORS issues with SVG content
-
-  const svgBlob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+  const svgBlob = new Blob([updatedSvgString], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(svgBlob);
 
   img.onload = () => {
     const padding = 20;
-    const naturalWidth = img.naturalWidth;
-    const naturalHeight = img.naturalHeight;
+    const { width, height } = img;
 
-    if (naturalWidth === 0 || naturalHeight === 0) {
+    if (width === 0 || height === 0) {
       console.error("SVG image has zero intrinsic dimensions, cannot export PNG.");
       URL.revokeObjectURL(url);
       alert("Diagram has no content or dimensions, cannot export as PNG.");
       return;
     }
 
-    canvas.width = naturalWidth + padding * 2;
-    canvas.height = naturalHeight + padding * 2;
-
+    canvas.width = width + padding * 2;
+    canvas.height = height + padding * 2;
+    
     // Set canvas background to match the application's background
     try {
         ctx.fillStyle = window.getComputedStyle(document.body).backgroundColor || 'white';
     } catch (e) {
-        ctx.fillStyle = 'white'; // Fallback if computed style fails (e.g. in tests)
+        ctx.fillStyle = 'white'; // Fallback
     }
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Draw the SVG image onto the canvas
-    ctx.drawImage(img, padding, padding, naturalWidth, naturalHeight);
-    URL.revokeObjectURL(url); // Clean up the object URL once drawn
+    ctx.drawImage(img, padding, padding, width, height);
+    URL.revokeObjectURL(url);
 
     try {
       const pngUrl = canvas.toDataURL('image/png');
@@ -125,19 +155,20 @@ export const exportPNG = (svgContent: string, filename: string = 'diagram.png') 
         document.body.removeChild(link);
       }
     } catch (e) {
-      console.error("Error calling toDataURL (canvas might be tainted):", e);
-      alert("Failed to export PNG. The diagram may contain external content that cannot be included. Please try generating the diagram without external images.");
+      console.error("Error calling toDataURL:", e);
+      alert("Failed to export PNG. The diagram may contain external content that cannot be included.");
     }
   };
 
   img.onerror = (e) => {
     console.error("Error loading SVG into Image object for PNG export:", e);
     URL.revokeObjectURL(url);
-    alert("Failed to load diagram for PNG export. The SVG data might be malformed or an error occurred during loading.");
+    alert("Failed to load diagram for PNG export. The SVG data might be malformed.");
   };
 
   img.src = url;
 };
+
 
 export const exportJSON = (diagramCode: string, filename: string = 'diagram.json') => {
   const jsonData = JSON.stringify({ diagramCode: stripMarkdownFences(diagramCode) }, null, 2);
