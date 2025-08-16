@@ -1,3 +1,4 @@
+
 // src/components/layout/app-header.tsx
 "use client";
 
@@ -47,7 +48,7 @@ const AppHeader: FC<AppHeaderProps> = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-10 w-10 border-2 border-primary hover:border-accent transition-colors">
-                    <AvatarImage src={currentUser.photoURL || `https://placehold.co/100x100.png`} alt={currentUser.displayName || currentUser.email || 'User'} data-ai-hint="abstract geometric" />
+                    <AvatarImage src={currentUser.photoURL || undefined} alt={currentUser.displayName || currentUser.email || 'User'} />
                     <AvatarFallback className="bg-primary text-primary-foreground">
                       {currentUser.email ? currentUser.email.substring(0, 1).toUpperCase() : 'U'}
                     </AvatarFallback>

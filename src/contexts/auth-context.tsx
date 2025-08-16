@@ -1,3 +1,4 @@
+
 // src/contexts/auth-context.tsx
 "use client";
 
@@ -27,9 +28,6 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Simple in-memory flag to simulate a logged-in user session
-let isAuthenticated = false;
-
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,12 +36,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     // Simulate checking auth state on initial load
     setTimeout(() => {
-      // In a real app with localStorage, you'd check a token here.
-      // For this mock, we just start logged out unless a session was started.
+      // Check for a "session" from a previous login
       if (typeof window !== 'undefined') {
         const sessionEmail = sessionStorage.getItem('mockUserEmail');
         if (sessionEmail) {
-          isAuthenticated = true;
           setCurrentUser({
             uid: 'mock-user-123',
             email: sessionEmail,
@@ -59,30 +55,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, pass: string) => {
     setIsLoading(true);
-    // Any email/password is valid in this mock.
+    return new Promise<void>((resolve, reject) => {
+      setTimeout(() => {
+        if (email === 'test@example.com' && pass === 'password123') {
+          const user: User = {
+            uid: 'mock-user-123',
+            email: email,
+            displayName: email.split('@')[0],
+            photoURL: null,
+          };
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('mockUserEmail', email); // Persist session
+          }
+          setCurrentUser(user);
+          setIsLoading(false);
+          router.replace('/diagram');
+          resolve();
+        } else {
+          setIsLoading(false);
+          reject(new Error('Invalid email or password.'));
+        }
+      }, 500); // Simulate network delay
+    });
+  };
+
+  const signup = async (email: string, pass: string) => {
+    // For this mock, signup immediately logs the user in.
+    setIsLoading(true);
     const user: User = {
-      uid: 'mock-user-123',
+      uid: `mock-user-${Date.now()}`,
       email: email,
       displayName: email.split('@')[0],
       photoURL: null,
     };
-    isAuthenticated = true;
     if (typeof window !== 'undefined') {
-      sessionStorage.setItem('mockUserEmail', email); // Persist email across refresh
+      sessionStorage.setItem('mockUserEmail', email); // Persist session
     }
     setCurrentUser(user);
     setIsLoading(false);
     router.replace('/diagram');
   };
-
-  const signup = async (email: string, pass: string) => {
-    // Signup and login have the same effect in this mock implementation.
-    await login(email, pass);
-  };
   
   const logout = async () => {
     setIsLoading(true);
-    isAuthenticated = false;
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('mockUserEmail');
     }

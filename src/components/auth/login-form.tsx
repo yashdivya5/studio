@@ -1,3 +1,4 @@
+
 // src/components/auth/login-form.tsx
 "use client";
 
@@ -36,8 +37,7 @@ const LoginForm: FC = () => {
             }
             // Navigation is handled by the auth context
         } catch (error: any) {
-            // Since this is a mock, we shouldn't get errors, but this is good practice
-            toast({ variant: 'destructive', title: 'Action Failed', description: 'An unexpected error occurred.' });
+            toast({ variant: 'destructive', title: 'Action Failed', description: error.message || 'An unexpected error occurred.' });
         } finally {
             setIsLoading(false);
         }
