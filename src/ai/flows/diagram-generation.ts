@@ -75,9 +75,12 @@ Uploaded File Content:
 
 **Critical Rules for Mermaid Output:**
 - The diagram code MUST be in **Mermaid format**.
-- **ALWAYS enclose node text (labels) in double quotes.**
+- **Rule: Node text MUST be enclosed in double quotes.**
   - **Correct:** \`nodeId["This is my node text"]\`
-  - **Incorrect:** \`nodeId[This is my node text]\` or \`nodeId[ "Text" ]\`
+  - **Incorrect:** \`nodeId[This is my node text]\`
+- **Rule: There MUST NOT be any spaces between the node ID and the brackets.**
+  - **Correct:** \`nodeId["Node text"]\`
+  - **Incorrect:** \`nodeId ["Node text"]\` or \`nodeId [ "Node text" ]\`
 - Start the code directly with the diagram type declaration (e.g., 'graph TD', 'classDiagram').
 - Link text MUST be in double quotes: \`A-- "Link Label" -->B\`.
 - **Crucially, do NOT include any external image URLs or links (e.g., \`![alt](http://...)\` or HTML \`<img>\` tags) within the diagram code.**
